@@ -8,6 +8,9 @@ const PORT = process.env.PORT || 2025;
 
 app.use(cors());
 app.use(express.json());
+const authRoutes = require('./routes/auth');
+app.use('/api', authRoutes);
+
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
