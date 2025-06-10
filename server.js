@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 2025;
 const MONGO_URI = process.env.MONGODB_URI;
+//db added
 
 if (!MONGO_URI) {
   console.error('❌ MONGODB_URI not found in .env file');
