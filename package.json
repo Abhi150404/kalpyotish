@@ -1,0 +1,29 @@
+{
+  "name": "kalpjyothisnodejs",
+  "version": "1.0.0",
+  "description": "astrology app and admin backend ",
+  "main": "server.js",
+  "scripts": {
+    "test": "server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vikrantbhawani2021/kalpjyothishNodejs.git"
+  },
+  "author": "Abhishek Sharma",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vikrantbhawani2021/kalpjyothishNodejs/issues"
+  },
+  "homepage": "https://github.com/Vikrantbhawani2021/kalpjyothishNodejs#readme",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "mongoose": "^8.15.1",
+    "multer": "^2.0.1"
+  }
+}
