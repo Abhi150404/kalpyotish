@@ -21,7 +21,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.get("/", (req, res) => {
   res.send("🌟 Kalp Jyotish backend is running!");
 });
-//port run 
+//port run env
 app.listen(PORT, () => {
   console.log(`🚀 Server is listening on port ${PORT}`);
 });
