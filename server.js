@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 2025;
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/users/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 // const authRoutes = require('./routes/auth');
 // app.use('/api', authRoutes);
 
