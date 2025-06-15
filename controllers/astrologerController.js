@@ -87,3 +87,17 @@ exports.registerAstrologer = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+exports.getAllAstrologers = async (req, res) => {
+  try {
+    const astrologers = await Astrologer.find();
+    res.status(200).json({
+      message: 'Astrologers fetched successfully',
+      data: astrologers
+    });
+  } catch (err) {
+    console.error('Fetching error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
