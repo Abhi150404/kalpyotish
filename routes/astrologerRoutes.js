@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/multer'); // your multer config
+const upload = require('../utilis/cloudinary'); // your multer config vv
 const astrologerController = require('../controllers/astrologerController');
 
 router.post('/register', upload.single('user_profile'), astrologerController.registerAstrologer);
