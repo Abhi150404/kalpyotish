@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require("./routes/authRoutes");
-const astrologerRoutes = require('./routes/astrologerRoutes');
+const astrologerRoutes = require('./routes/astrologerRoutes'); //spellcheck
 
 const app = express();
 const PORT = process.env.PORT || 5000;
