@@ -198,3 +198,33 @@ exports.deleteAstrologer = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+exports.updateAvailabilityStatus = async (req, res) => {
+  try {
+    const { id } = req.params; // astrologer's _id from URL
+    const { status } = req.body; // live or offline
+
+    if (!['live', 'offline'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const updated = await Astrologer.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Astrologer not found' });
+    }
+
+    res.status(200).json({
+      message: `Astrologer status updated to ${status}`,
+      data: updated
+    });
+  } catch (err) {
+    console.error('Availability update error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

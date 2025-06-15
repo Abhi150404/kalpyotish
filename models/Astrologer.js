@@ -59,7 +59,13 @@ const AstrologerSchema = new mongoose.Schema({
     thursday: String,
     friday: String,
     saturday: String
-  }
+  },
+  status: {
+  type: String,
+  enum: ['live', 'offline'],
+  default: 'offline'
+}
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Astrologer', AstrologerSchema);
