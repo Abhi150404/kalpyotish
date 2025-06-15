@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require("./routes/authRoutes");
+const astrologerRoutes = require('./routes/astrologerRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 2025;
@@ -10,6 +11,7 @@ const PORT = process.env.PORT || 2025;
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use('/api/astrologer', astrologerRoutes);
 // const authRoutes = require('./routes/auth');
 // app.use('/api', authRoutes);
 
@@ -23,6 +25,12 @@ mongoose.connect(process.env.MONGODB_URI)
 app.get("/", (req, res) => {
   res.send("🌟 Kalp Jyotish backend is running!");
 });
+
+app.post("/test", (req, res) => {
+  res.send("Test route works!");
+  console.log(res);
+});
+
 //port run env
 app.listen(PORT, () => {
   console.log(`🚀 Server is listening on port ${PORT}`);

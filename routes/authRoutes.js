@@ -3,9 +3,11 @@
 
 const express = require("express");
 const router = express.Router();
-const { verifyAndSignup } = require("../controllers/authController");
+const authController = require("../controllers/authController");
 
-router.post("/signup", verifyAndSignup);
+
+router.post("/signup", authController.verifyAndSignup);
+router.post("/login", authController.loginWithPhone);
 
 module.exports = router;
 
