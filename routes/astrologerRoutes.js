@@ -9,3 +9,4 @@ router.post('/register', upload.single('profile'), registerAstrologer);
 router.get('/getAllAstrologers', getAllAstrologers);
 
 module.exports = router;
+//
