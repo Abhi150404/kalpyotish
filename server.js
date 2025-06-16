@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRoutes = require("./routes/authRoutes");
 const astrologerRoutes = require('./routes/astrologerRoutes'); //spellcheck
 const dropdownRoutes = require('./routes/dropdownRoutes');
+const transitRoutes = require('./routes/transitRoutes');
 
 
 const app = express();
@@ -15,6 +16,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use('/api/astrologer', astrologerRoutes);
 app.use('/api', dropdownRoutes); 
+
+app.use('/api/transits', transitRoutes);
 // const authRoutes = require('./routes/auth');
 // app.use('/api', authRoutes);
 
