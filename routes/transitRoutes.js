@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const transitController = require('../controllers/transitController');
-const { upload } = require('../utils/cloudinaryConfig'); // Adjust path as needed
+const { upload } = require('../utilis/cloudinary'); // Adjust path as needed
 
 router.post('/add-trasnsit', upload.single('image'), transitController.createTransit);
 router.get('/get-trasnsit', transitController.getAllTransits);
