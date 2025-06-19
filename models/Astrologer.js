@@ -64,7 +64,12 @@ const AstrologerSchema = new mongoose.Schema({
   type: String,
   enum: ['live', 'offline'],
   default: 'offline'
-}
+},
+isApproved: {
+  type: Boolean,
+  default: false
+},
+
 
 }, { timestamps: true });
 
