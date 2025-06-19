@@ -16,6 +16,9 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use('/api/astrologer', astrologerRoutes);
 app.use('/api', dropdownRoutes); 
+const kundaliRoutes = require('./routes/kundaliRoutes');
+app.use('/api/kundali', kundaliRoutes);
+
 
 app.use('/api/transits', transitRoutes);
 // const authRoutes = require('./routes/auth');
