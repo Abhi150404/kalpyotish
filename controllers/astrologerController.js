@@ -228,3 +228,29 @@ exports.updateAvailabilityStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+exports.approveAstrologer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const astrologer = await Astrologer.findByIdAndUpdate(
+      id,
+      { isApproved: true },
+      { new: true }
+    );
+
+    if (!astrologer) {
+      return res.status(404).json({ message: 'Astrologer not found' });
+    }
+
+    res.status(200).json({
+      message: 'Astrologer approved successfully',
+      data: astrologer
+    });
+
+  } catch (err) {
+    console.error('Approval error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+

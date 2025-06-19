@@ -9,5 +9,7 @@ router.get('/dropdowns', astrologerController.getDropdownOptions);
 router.put('/update/:id', upload.single('user_profile'), astrologerController.updateAstrologer);
 router.delete('/delete/:id', astrologerController.deleteAstrologer);
 router.patch('/status/:id', astrologerController.updateAvailabilityStatus);
+router.patch('/approve/:id', astrologerController.approveAstrologer);
+
 
 module.exports = router;
