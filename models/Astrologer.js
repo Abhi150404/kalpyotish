@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const astrologerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   number: { type: String, required: true, unique: true },
@@ -11,3 +13,6 @@ const astrologerSchema = new mongoose.Schema({
     videoCall: { type: Boolean, default: false }
   }
 }, { timestamps: true });
+
+
+module.exports = mongoose.model('Astrologer', astrologerSchema);

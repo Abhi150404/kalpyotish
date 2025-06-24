@@ -18,6 +18,9 @@ app.use('/api/astrologer', astrologerRoutes);
 app.use('/api', dropdownRoutes); 
 const kundaliRoutes = require('./routes/kundaliRoutes');
 app.use('/api/kundali', kundaliRoutes);
+const bannerRoutes = require('./routes/bannerRoutes');
+app.use('/api/banners', bannerRoutes);
+
 
 
 app.use('/api/transits', transitRoutes);
