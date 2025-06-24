@@ -205,3 +205,35 @@ exports.getAstrologerById = async (req, res) => {
   }
 };
 
+
+
+// Update availability status for chat/call/videoCall
+exports.updateAvailability = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { chat, call, videoCall } = req.body;
+
+    const astrologer = await Astrologer.findById(id);
+    if (!astrologer) {
+      return res.status(404).json({ success: false, message: 'Astrologer not found' });
+    }
+
+    // Update only provided fields
+    if (chat !== undefined) astrologer.availability.chat = chat;
+    if (call !== undefined) astrologer.availability.call = call;
+    if (videoCall !== undefined) astrologer.availability.videoCall = videoCall;
+
+    await astrologer.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Availability updated successfully',
+      data: astrologer.availability
+    });
+
+  } catch (err) {
+    console.error('Availability update error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
