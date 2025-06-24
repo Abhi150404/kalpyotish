@@ -174,3 +174,34 @@ exports.approveAstrologer = async (req, res) => {
   }
 };
 
+
+// Get Astrologer By ID
+exports.getAstrologerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const astrologer = await Astrologer.findById(id);
+
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Astrologer not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Astrologer fetched successfully',
+      data: astrologer
+    });
+
+  } catch (err) {
+    console.error('Fetch error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
+  }
+};
+

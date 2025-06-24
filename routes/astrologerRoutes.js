@@ -10,6 +10,8 @@ router.patch('/update-profile/:id', upload.single('profilePhoto'),  astrologerCo
 
 router.get('/all', astrologerController.getAllAstrologers);
 router.get('/dropdowns', astrologerController.getDropdownOptions);
+router.get('/astrologerbyId/:id', astrologerController.getAstrologerById);
+
 
 router.delete('/delete/:id', astrologerController.deleteAstrologer);
 router.patch('/status/:id', astrologerController.updateAvailabilityStatus);
