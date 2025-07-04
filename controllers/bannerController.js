@@ -4,12 +4,17 @@ const { v4: uuidv4 } = require('uuid');
 // Add banner images (multi-upload)
 exports.addBanners = async (req, res) => {
   try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'No images uploaded' });
+    }
+
+    console.log("Uploaded Files:", req.files); // 👀 Check output here
+
     const uploadedImages = req.files.map(file => ({
       _id: uuidv4(),
-      url: file.path
+      url: file.path || file.secure_url // safer
     }));
 
-    // Create or update (single document pattern)
     let banner = await Banner.findOne();
     if (banner) {
       banner.images.push(...uploadedImages);
@@ -29,6 +34,7 @@ exports.addBanners = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
+
 
 // Get all banner images
 exports.getBanners = async (req, res) => {
