@@ -20,7 +20,7 @@ const kundaliRoutes = require('./routes/kundaliRoutes');
 app.use('/api/kundali', kundaliRoutes);
 const bannerRoutes = require('./routes/bannerRoutes');
 app.use('/api/banners', bannerRoutes);
-app.use('/api', poojaRoutes);ß
+app.use('/api', poojaRoutes);
 
 
 
