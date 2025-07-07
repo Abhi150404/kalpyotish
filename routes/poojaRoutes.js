@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../utilis/cloudinary');
+const { upload } = require('../utilis/cloudinary');
+
 const poojaController = require('../controllers/poojaController');
 
 router.post('/add-poojas', upload.single('image'), poojaController.createPooja);
