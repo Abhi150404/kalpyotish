@@ -1,58 +1,62 @@
-const admin = require("../utilis/firebase"); 
-const User = require("../models/User");
+const User = require('../models/User');
 
-exports.verifyAndSignup = async (req, res) => {
-  const { token, name, number, gender } = req.body;
-
-  if (!token || !name || !number || !gender) {
-    return res.status(400).json({ error: "All fields are required" });
-  }
-
+exports.signup = async (req, res) => {
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    const firebaseUID = decoded.uid;
+    const { name, email, gender, city, mobileNo, password } = req.body;
+    const profile = req.file?.path;
 
-    // if user already exists
-    // const existingUser = await User.findOne({ firebaseUID });
-    // if (existingUser) {
-    //   return res.status(409).json({ error: "User already exists" });
-    // }
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: 'Email already exists' });
 
-    // Create new user
-    const newUser = await User.create({ firebaseUID, name, number, gender });
+    const newUser = new User({
+      name,
+      email,
+      gender,
+      city,
+      mobileNo,
+      password, // ⚠️ Storing as plain text (not secure)
+      profile,
+    });
 
-    return res.status(200).json({ message: "User created successfully", user: newUser });
+    await newUser.save();
 
+    res.status(201).json({ message: 'User registered successfully', data: newUser });
   } catch (err) {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 };
 
-
-exports.loginWithPhone = async (req, res) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(400).json({ error: "Token is required" });
-  }
-
+exports.login = async (req, res) => {
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    const firebaseUID = decoded.uid;
+    const { email, password } = req.body;
 
-    const user = await User.findOne({ firebaseUID });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found. Please sign up first." });
+    if (user.password !== password) {
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    return res.status(200).json({
-      message: "Login successful",
-      user,
-    });
-
+    // No JWT, just return user
+    res.json({ message: 'Login successful', data: user });
   } catch (err) {
-    console.error("Login error:", err);
-    return res.status(401).json({ error: "Invalid or expired token" });
+    res.status(500).json({ message: 'Login failed', error: err.message });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (req.file) {
+      updates.profile = req.file.path;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(id, updates, { new: true });
+
+    res.json({ message: 'User updated successfully', data: updatedUser });
+  } catch (err) {
+    res.status(500).json({ message: 'Update failed', error: err.message });
   }
 };
