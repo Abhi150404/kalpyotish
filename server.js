@@ -6,7 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const astrologerRoutes = require('./routes/astrologerRoutes'); //spellcheck
 const dropdownRoutes = require('./routes/dropdownRoutes');
 const transitRoutes = require('./routes/transitRoutes');
-
+const poojaRoutes = require('./routes/poojaRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +20,7 @@ const kundaliRoutes = require('./routes/kundaliRoutes');
 app.use('/api/kundali', kundaliRoutes);
 const bannerRoutes = require('./routes/bannerRoutes');
 app.use('/api/banners', bannerRoutes);
+app.use('/api', poojaRoutes);ß
 
 
 
