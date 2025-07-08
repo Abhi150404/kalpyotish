@@ -11,9 +11,13 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  customProductId: {
+    type: String,
+    unique: true
+  },
   status: {
     type: String,
-    default: 'PENDING', // or CONFIRMED, FAILED
+    default: 'PENDING',
     enum: ['PENDING', 'CONFIRMED', 'FAILED']
   }
 }, { timestamps: true });
