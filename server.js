@@ -28,6 +28,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/faqs', faqRoutes);
 
 
+const orderRoutes = require('./routes/orderRoutes');
+app.use('/api/orders', orderRoutes);
+
 
 app.use('/api/transits', transitRoutes);
 // const authRoutes = require('./routes/auth');
