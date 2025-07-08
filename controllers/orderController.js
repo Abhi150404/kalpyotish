@@ -7,13 +7,11 @@ const createOrder = async (req, res) => {
   try {
     const { productId, sessionId } = req.body;
 
-    console.log('Received:', { productId, sessionId });
-
     if (!productId || !sessionId) {
       return res.status(400).json({ message: 'Product ID and session ID are required' });
     }
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId); // productId is _id
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -36,6 +34,7 @@ const createOrder = async (req, res) => {
     res.status(500).json({ message: 'Failed to create order', error: error.message || error });
   }
 };
+
 
 
 module.exports = {
