@@ -8,7 +8,7 @@ router.post('/signup', upload.single('profile'), authController.signup);
 router.post('/login', authController.login);
 router.put('/update/:id', upload.single('profile'), authController.updateUser);
 router.get('/user-stats', getUserStats);
-router.get('/users', getUserList);
+router.get('/users', getUserList);//
 
 
 module.exports = router;
