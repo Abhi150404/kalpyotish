@@ -84,3 +84,21 @@ exports.getUserStats = async (req, res) => {
     });
   }
 };
+
+// ✅ Get all users (for admin)
+exports.getUserList = async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 }); // newest first
+
+    res.status(200).json({
+      message: 'Users fetched successfully',
+      data: users
+    });
+  } catch (err) {
+    console.error('Fetch users error:', err);
+    res.status(500).json({
+      message: 'Failed to fetch users',
+      error: err.message
+    });
+  }
+};
