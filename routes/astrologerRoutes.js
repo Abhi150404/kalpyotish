@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { upload } = require('../utilis/cloudinary');  // your multer config
 const astrologerController = require('../controllers/astrologerController');
-const { getAstrologerStats } = require('../controllers/adminAstrologerController');
+const { getAstrologerStats } = require('../controllers/astrologerController');
 
 
 router.post('/register', upload.single('profilePhoto'),  astrologerController.registerAstrologer);
