@@ -72,6 +72,29 @@ exports.getAllAstrologers = async (req, res) => {
   }
 };
 
+exports.getAstrologerStats = async (req, res) => {
+  try {
+    const total = await Astrologer.countDocuments();
+    const active = await Astrologer.countDocuments({ status: 'active' });
+    const inactive = await Astrologer.countDocuments({ status: 'inactive' });
+
+    res.status(200).json({
+      message: 'Astrologer stats fetched successfully',
+      data: {
+        total,
+        active,
+        inactive
+      }
+    });
+  } catch (err) {
+    console.error('Admin astrologer stats error:', err);
+    res.status(500).json({
+      message: 'Failed to fetch astrologer stats',
+      error: err.message
+    });
+  }
+};
+
 exports.getDropdownOptions = async (req, res) => {
   try {
     // Static dropdowns (could also be fetched from DB if needed)

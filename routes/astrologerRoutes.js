@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { upload } = require('../utilis/cloudinary');  // your multer config
 const astrologerController = require('../controllers/astrologerController');
+const { getAstrologerStats } = require('../controllers/adminAstrologerController');
+
 
 router.post('/register', upload.single('profilePhoto'),  astrologerController.registerAstrologer);
 
@@ -12,6 +14,8 @@ router.get('/all', astrologerController.getAllAstrologers);
 router.get('/dropdowns', astrologerController.getDropdownOptions);
 router.get('/astrologerbyId/:id', astrologerController.getAstrologerById);
 router.patch('/update-availability/:id', astrologerController.updateAvailability);
+router.get('/astrologer-stats', getAstrologerStats);
+
 
 
 
