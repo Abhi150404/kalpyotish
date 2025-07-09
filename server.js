@@ -11,7 +11,6 @@ const productRoutes = require('./routes/productRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -30,12 +29,12 @@ app.use('/api/faqs', faqRoutes);
 app.use('/api/admin', adminRoutes);
 
 
-app.use('/api/orders', require('./routes/orderRoutes'));
+
+const orderRoutes = require('./routes/orderRoutes');
+app.use('/api/orders', orderRoutes);
 
 
 app.use('/api/transits', transitRoutes);
-const adminRoutes = require('./routes/adminRoutes');
-app.use('/api/admin', adminRoutes);
 // const authRoutes = require('./routes/auth');
 // app.use('/api', authRoutes);
 
