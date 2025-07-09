@@ -9,6 +9,7 @@ const transitRoutes = require('./routes/transitRoutes');
 const poojaRoutes = require('./routes/poojaRoutes');
 const productRoutes = require('./routes/productRoutes');
 const faqRoutes = require('./routes/faqRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 
 const app = express();
@@ -26,12 +27,15 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api', poojaRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/faqs', faqRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 app.use('/api/orders', require('./routes/orderRoutes'));
 
 
 app.use('/api/transits', transitRoutes);
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
 // const authRoutes = require('./routes/auth');
 // app.use('/api', authRoutes);
 
