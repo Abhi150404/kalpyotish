@@ -60,3 +60,27 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ message: 'Update failed', error: err.message });
   }
 };
+
+
+exports.getUserStats = async (req, res) => {
+  try {
+    const total = await User.countDocuments();
+    const male = await User.countDocuments({ gender: 'male' });
+    const female = await User.countDocuments({ gender: 'female' });
+
+    res.status(200).json({
+      message: 'User stats fetched successfully',
+      data: {
+        total,
+        male,
+        female
+      }
+    });
+  } catch (err) {
+    console.error('Admin user stats error:', err);
+    res.status(500).json({
+      message: 'Failed to fetch user stats',
+      error: err.message
+    });
+  }
+};
