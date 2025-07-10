@@ -54,3 +54,33 @@ exports.getBanners = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
+
+// Delete a specific banner image by _id
+exports.deleteBanners = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const banner = await Banner.findOne();
+    if (!banner) {
+      return res.status(404).json({ success: false, message: 'No banners found' });
+    }
+
+    const initialLength = banner.images.length;
+    banner.images = banner.images.filter(img => img._id !== id);
+
+    if (banner.images.length === initialLength) {
+      return res.status(404).json({ success: false, message: 'Banner image not found' });
+    }
+
+    await banner.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Banner image deleted successfully',
+      data: banner.images
+    });
+  } catch (err) {
+    console.error('Delete banner error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
