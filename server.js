@@ -32,6 +32,9 @@ app.use('/api/admin', adminRoutes);
 
 const orderRoutes = require('./routes/orderRoutes');
 app.use('/api/orders', orderRoutes);
+const privacyPolicyRoutes = require('./routes/privacyPolicyRoutes');
+app.use('/api', privacyPolicyRoutes);
+
 
 
 app.use('/api/transits', transitRoutes);
