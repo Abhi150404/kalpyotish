@@ -54,6 +54,158 @@ app.post("/test", (req, res) => {
   console.log(res);
 });
 
+
+
+
+const SIGNS = [
+  "aries", "taurus", "gemini", "cancer", "leo", "virgo",
+  "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"
+];
+
+const descriptions = [
+  "A surprise is on its way to you today.",
+  "Expect a moment of peace amidst chaos.",
+  "You’ll find inspiration in unexpected places.",
+  "Someone close has valuable advice.",
+  "Now is the time to trust your instincts.",
+  "A missed opportunity will return soon.",
+  "Practice patience; rewards will follow.",
+  "Focus on what truly matters to you.",
+  "An old friend may reappear in your life.",
+  "Let go of what no longer serves you.",
+  "Your energy will attract positive people.",
+  "You may discover a hidden talent today.",
+  "Challenges will shape your character.",
+  "Small steps will lead to major progress.",
+  "Be bold – your courage will be rewarded.",
+  "An emotional breakthrough is on the horizon.",
+  "You’re more resilient than you think.",
+  "Good news is closer than you expect.",
+  "Honesty will strengthen your relationships.",
+  "You’ll feel extra creative today – use it.",
+  "Reevaluate your priorities and refocus.",
+  "Romantic energy surrounds you today.",
+  "Communication is the key to today’s success.",
+  "A financial gain is possible soon.",
+  "You’re ready to take a necessary risk.",
+  "A short trip could refresh your soul.",
+  "Avoid gossip – protect your peace.",
+  "Today favors deep thinking and reflection.",
+  "Your efforts are being noticed.",
+  "You may get clarity about a past issue.",
+  "Collaboration will be fruitful today.",
+  "You're entering a cycle of abundance.",
+  "It's okay to take a break and recharge.",
+  "Helping someone else will lift your spirit.",
+  "Forgiveness will set you free.",
+  "A long-awaited answer is coming your way.",
+  "Don’t be afraid to express your ideas.",
+  "Focus on self-love and healing today.",
+  "Something you've been hoping for will manifest.",
+  "The universe is aligning in your favor.",
+  "You are ready to grow beyond your limits.",
+  "Let spontaneity guide you today.",
+  "You might meet someone inspiring today.",
+  "Try something new – it could be life-changing.",
+  "Set boundaries for your well-being.",
+  "Avoid making big decisions today.",
+  "Today is perfect for setting goals.",
+  "You’ll shine in a leadership role.",
+  "An unexpected compliment will lift your mood.",
+  "Time to step outside your comfort zone.",
+  "Reconnect with something that brings joy.",
+  "Gratitude will bring you more to be thankful for.",
+  "Don’t compare yourself to others.",
+  "Trust the timing of your life.",
+  "You’re about to attract something amazing.",
+  "Let intuition guide your actions today.",
+  "The answer you seek lies within.",
+  "Stay open-minded — something unusual is coming.",
+  "You’re stronger than your doubts.",
+  "Stand up for what you believe in.",
+  "Take time to recharge your energy.",
+  "A peaceful resolution is possible.",
+  "Be mindful of your words today.",
+  "Your curiosity will lead to success.",
+  "A shift in your routine brings clarity.",
+  "You may discover a new passion today.",
+  "Listen before you speak today.",
+  "Trust the journey, even if unclear.",
+  "Don’t rush — everything unfolds in time.",
+  "Your past efforts are about to pay off.",
+  "Creative expression will be especially rewarding.",
+  "It's a good day to ask questions.",
+  "You’ll find power in staying calm.",
+  "Today’s actions create tomorrow’s reality.",
+  "New friendships may form unexpectedly.",
+  "Use humor to diffuse a tense situation.",
+  "Be open to change — it’s necessary.",
+  "A long-held dream is within reach.",
+  "Release control and trust the flow.",
+  "Someone values you more than you realize.",
+  "You have more choices than you think.",
+  "Don’t fear mistakes — they teach growth.",
+  "Start something you've been postponing.",
+  "An opportunity may come from a stranger.",
+  "Let compassion guide your interactions.",
+  "You’re entering a powerful transformation phase.",
+  "Be cautious of impulsive decisions.",
+  "You're ready to level up spiritually.",
+  "A lucky encounter may shift your direction.",
+  "Your energy will uplift those around you.",
+  "Today brings light to a hidden truth.",
+  "You're ready to turn the page.",
+  "Your consistency will soon be rewarded.",
+  "Take the initiative on a lingering task.",
+  "Nurture what you want to grow.",
+  "Be patient — trust the slow bloom.",
+  "Speak your truth — it will liberate you.",
+  "Your mind is sharp — put it to work.",
+  "Today favors bold thinking and clear action.",
+  "Pay attention to your dreams tonight.",
+  "You're moving closer to balance and harmony.",
+  "The next step will reveal itself soon.",
+  "Joy is found in being present.",
+  "It’s a great day to forgive and move forward.",
+  "Let your light shine unapologetically."
+];
+
+const moods = ["Happy", "Focused", "Adventurous", "Calm", "Romantic", "Tense", "Excited", "Reflective", "Energetic", "Peaceful"];
+const colors = ["Red", "Blue", "Green", "Yellow", "Black", "White", "Purple", "Orange", "Pink", "Turquoise"];
+
+function generateHoroscope(sign, period) {
+  return {
+    sign,
+    period,
+    description: descriptions[Math.floor(Math.random() * descriptions.length)],
+    lucky_number: Math.floor(Math.random() * 100),
+    mood: moods[Math.floor(Math.random() * moods.length)],
+    color: colors[Math.floor(Math.random() * colors.length)],
+    date: new Date().toLocaleDateString()
+  };
+}
+
+app.get('/horoscope/:sign/:period', (req, res) => {
+  const { sign, period } = req.params;
+  const lowerSign = sign.toLowerCase();
+
+  if (!SIGNS.includes(lowerSign)) {
+    return res.status(400).json({ error: 'Invalid zodiac sign' });
+  }
+
+  if (!['daily', 'weekly'].includes(period.toLowerCase())) {
+    return res.status(400).json({ error: 'Period must be "daily" or "weekly"' });
+  }
+
+  const result = generateHoroscope(lowerSign, period.toLowerCase());
+  return res.json(result);
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Custom Horoscope API running at http://localhost:${PORT}`);
+});
+
+
 //port run env
 app.listen(PORT, () => {
   console.log(`🚀 Server is listening on port ${PORT}`);
