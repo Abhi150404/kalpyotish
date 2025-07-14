@@ -6,6 +6,7 @@ const { getAstrologerStats } = require('../controllers/astrologerController');
 
 
 router.post('/register', upload.single('profilePhoto'),  astrologerController.registerAstrologer);
+router.post('/login',astrologerController.loginAstrologer)
 
 // Update profile photo
 router.patch('/update-profile/:id', upload.single('profilePhoto'),  astrologerController.updateProfilePhoto);
