@@ -26,16 +26,22 @@ exports.requestCommunication = async (req, res) => {
 
     await request.save();
 
+    const populatedRequest = await request
+      .populate('user', 'name email mobileNo')
+      .populate('astrologer', 'name email number')
+      .execPopulate();
+
     res.status(201).json({
       success: true,
       message: `${type} request sent successfully`,
-      data: request
+      data: populatedRequest
     });
   } catch (err) {
     console.error('Communication request error:', err);
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
+
 
 // Get all requests for an astrologer
 exports.getRequestsForAstrologer = async (req, res) => {
@@ -52,6 +58,38 @@ exports.getRequestsForAstrologer = async (req, res) => {
     });
   } catch (err) {
     console.error('Fetching requests error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
+exports.updateRequestStatus = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { status } = req.body;
+
+    if (!['accepted', 'rejected', 'completed'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status value' });
+    }
+
+    const updatedRequest = await CommunicationRequest.findByIdAndUpdate(
+      requestId,
+      { status },
+      { new: true }
+    )
+      .populate('user', 'name email mobileNo')
+      .populate('astrologer', 'name email number');
+
+    if (!updatedRequest) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Request status updated to ${status}`,
+      data: updatedRequest
+    });
+  } catch (err) {
+    console.error('Update request error:', err);
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };

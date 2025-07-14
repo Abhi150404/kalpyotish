@@ -10,5 +10,6 @@ router.post('/request', requestCommunication);
 
 // GET: Get all requests for a specific astrologer
 router.get('/requests/:astrologerId', getRequestsForAstrologer);
+router.patch('/update-status/:requestId', updateRequestStatus);
 
 module.exports = router;
