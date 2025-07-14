@@ -26,10 +26,9 @@ exports.requestCommunication = async (req, res) => {
 
     await request.save();
 
-    const populatedRequest = await request
+    const populatedRequest = await CommunicationRequest.findById(request._id)
       .populate('user', 'name email mobileNo')
-      .populate('astrologer', 'name email number')
-      .execPopulate();
+      .populate('astrologer', 'name email number');
 
     res.status(201).json({
       success: true,
@@ -41,6 +40,7 @@ exports.requestCommunication = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
+
 
 
 // Get all requests for an astrologer
