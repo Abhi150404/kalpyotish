@@ -10,6 +10,7 @@ const poojaRoutes = require('./routes/poojaRoutes');
 const productRoutes = require('./routes/productRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const communicationRoutes = require('./routes/communicationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,7 +28,7 @@ app.use('/api', poojaRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api/communication', communicationRoutes);
 
 
 const orderRoutes = require('./routes/orderRoutes');
