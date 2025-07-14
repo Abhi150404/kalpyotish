@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {
   requestCommunication,
-  getRequestsForAstrologer
+  getRequestsForAstrologer,
+  updateRequestStatus
 } = require('../controllers/communicationController');
 
 // POST: Request communication (chat/call/videoCall)
