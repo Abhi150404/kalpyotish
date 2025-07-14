@@ -1,6 +1,6 @@
 const CommunicationRequest = require('../models/CommunicationRequest');
 const User = require('../models/UserDetail');
-const Astrologer = require('../models/astrologerModel');
+const Astrologer = require('../models/Astrologer');
 
 // Request communication
 exports.requestCommunication = async (req, res) => {
