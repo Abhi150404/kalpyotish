@@ -28,6 +28,48 @@ exports.registerAstrologer = async (req, res) => {
   }
 };
 
+
+
+exports.loginAstrologer = async (req, res) => {
+  try {
+    const { loginId } = req.body;
+
+    if (!loginId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email or phone number is required',
+      });
+    }
+
+    const astrologer = await Astrologer.findOne({
+      $or: [{ email: loginId }, { number: loginId }],
+    });
+
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Astrologer not found',
+      });
+    }
+
+    // If you add password later, verify here
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: astrologer,
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message,
+    });
+  }
+};
+
+
 // Update Profile Photo
 exports.updateProfilePhoto = async (req, res) => {
   try {
