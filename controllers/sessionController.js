@@ -43,3 +43,45 @@ exports.startSession = async (req, res) => {
 };
 
 
+const Transaction = require('../models/Transaction');
+
+exports.endSession = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    const session = await Session.findById(sessionId).populate('user');
+    if (!session || session.status !== 'active') {
+      return res.status(400).json({ success: false, message: 'Session already ended or invalid' });
+    }
+
+    const now = new Date();
+    const seconds = Math.floor((now - new Date(session.startedAt)) / 1000);
+    const charge = seconds * session.ratePerSecond;
+
+    const user = session.user;
+    if (user.wallet.balance < charge) {
+      session.status = 'terminated';
+    } else {
+      session.status = 'completed';
+      user.wallet.balance -= charge;
+      await user.save();
+
+      await Transaction.create({
+        userId: user._id,
+        type: 'debit',
+        amount: charge,
+        reason: session.type
+      });
+    }
+
+    session.endedAt = now;
+    session.totalDuration = seconds;
+    session.totalCharged = charge;
+    await session.save();
+
+    res.status(200).json({ success: true, message: 'Session ended', session });
+  } catch (err) {
+    console.error('End session error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
