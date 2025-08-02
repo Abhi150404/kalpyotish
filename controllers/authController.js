@@ -1,4 +1,8 @@
 const User = require('../models/UserDetail');
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+
+const emailStore = {};
 
 exports.signup = async (req, res) => {
   try {
@@ -100,3 +104,68 @@ exports.getUserList = async (req, res) => {
     });
   }
 };
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "vikrantbhawani2020@gmail.com",
+    pass: "kfcvjpvcsdiixzwh", // App Password
+  },
+});
+
+function generateOTP() {
+  return crypto.randomInt(100000, 999999).toString(); // 6-digit OTP
+}
+
+// Send OTP API
+exports.sendOTP = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  const otp = generateOTP();
+  const expires = Date.now() + 5 * 60 * 1000; // valid for 5 mins
+
+  emailStore[email] = { otp, expires, verified: false };
+
+  const mailOptions = {
+    from: "vikrantbhawani2020@gmail.com",
+    to: email,
+    subject: "Your OTP Code",
+    text: `Your verification OTP is ${otp}. It is valid for 5 minutes.`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ message: "OTP sent successfully" });
+  } catch (err) {
+    console.error("Error sending OTP:", err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+}
+
+// Verify OTP API
+exports.verifyOTP = (req, res) =>{
+  const { email, otp } = req.body;
+  const record = emailStore[email];
+
+  if (!record) return res.status(400).json({ message: "No OTP sent to this email" });
+
+  if (record.verified)
+    return res.status(400).json({ message: "Email already verified" });
+
+  if (Date.now() > record.expires)
+    return res.status(400).json({ message: "OTP expired" });
+
+  if (record.otp !== otp)
+    return res.status(400).json({ message: "Invalid OTP" });
+
+  emailStore[email].verified = true;
+  res.json({ message: "Email verified successfully" });
+}
+
+// To check if email is verified before registration
+// function isEmailVerified(email) {
+//   return emailStore[email]?.verified === true;
+// }
+
+
