@@ -6,7 +6,7 @@ const emailStore = {};
 
 exports.signup = async (req, res) => {
   try {
-    const { name, email, gender, city, mobileNo, password } = req.body;
+    const { name, email, gender, city, mobileNo, dateOfBirth, timeOfBirth } = req.body;
     const profile = req.file?.path;
 
     const existing = await User.findOne({ email });
@@ -18,7 +18,8 @@ exports.signup = async (req, res) => {
       gender,
       city,
       mobileNo,
-      password, // ⚠️ Storing as plain text (not secure)
+      dateOfBirth,
+      timeOfBirth,
       profile,
     });
 
@@ -29,6 +30,7 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 };
+
 
 exports.login = async (req, res) => {
   try {

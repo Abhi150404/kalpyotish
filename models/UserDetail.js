@@ -6,13 +6,15 @@ const userSchema = new mongoose.Schema({
   gender: String,
   city: String,
   mobileNo: String,
-  password: String,
   profile: String, // Cloudinary URL
-  wallet: {
-  balance: { type: Number, default: 0 },
-  currency: { type: String, default: 'INR' }
-},
+  dateOfBirth: Date,
+  timeOfBirth: String, // or Date if storing with time zone logic
 
+  wallet: {
+    balance: { type: Number, default: 0 },
+    currency: { type: String, default: 'INR' }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('UserDetail', userSchema, 'UserDetail');
+
