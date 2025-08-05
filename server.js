@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('./cron/walletCron');
-
+const agoraRoutes = require('./routes/agoraRoutes');
 const authRoutes = require("./routes/authRoutes");
 const astrologerRoutes = require('./routes/astrologerRoutes'); //spellcheck
 const dropdownRoutes = require('./routes/dropdownRoutes');
@@ -14,6 +14,7 @@ const faqRoutes = require('./routes/faqRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const communicationRoutes = require('./routes/communicationRoutes');
 const SessionRoutes = require('./routes/sessionRoutes');
+
 
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/faqs', faqRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/sessions', SessionRoutes);
+app.use('/api/agora', agoraRoutes);
 
 
 const orderRoutes = require('./routes/orderRoutes');
