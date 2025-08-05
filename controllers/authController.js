@@ -4,7 +4,7 @@ const crypto = require("crypto");
 
 const emailStore = {};
 
-const { getNextSequenceValue } = require('../utils/sequenceGenerator');
+const { getNextSequenceValue } = require('../utilis/sequenceGenerator');
 exports.signup = async (req, res) => {
   try {
     const { name, email, password, gender, city, mobileNo, dateOfBirth, timeOfBirth } = req.body;
