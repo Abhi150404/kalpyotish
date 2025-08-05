@@ -8,7 +8,7 @@ const generateAgoraToken = (req, res) => {
     const APP_ID = "cdb07bd78545426d8f8d94396c1226e3";
     
     // IMPORTANT: Paste the App Certificate you just copied from the Agora Console here.
-    const APP_CERTIFICATE = "PASTE_YOUR_REAL_APP_CERTIFICATE_HERE"; 
+    const APP_CERTIFICATE = "744e98ca28a243acae8f37d54df011ae"; 
 
     // =========================================================
 
