@@ -4,17 +4,25 @@ const crypto = require("crypto");
 
 const emailStore = {};
 
+const { getNextSequenceValue } = require('../utils/sequenceGenerator');
 exports.signup = async (req, res) => {
   try {
-    const { name, email, gender, city, mobileNo, dateOfBirth, timeOfBirth } = req.body;
+    const { name, email, password, gender, city, mobileNo, dateOfBirth, timeOfBirth } = req.body;
     const profile = req.file?.path;
 
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: 'Email already exists' });
+    if (existing) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Get the next unique numeric ID for the new user
+    const userUid = await getNextSequenceValue('user_uid'); // <-- USE THE FUNCTION
 
     const newUser = new User({
+      uid: userUid, // <-- ASSIGN THE UID
       name,
       email,
+      password, // Again, please hash this password!
       gender,
       city,
       mobileNo,
@@ -32,21 +40,35 @@ exports.signup = async (req, res) => {
 };
 
 
+
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-  if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // You need to fetch the user from the database first
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // This is plain text comparison. Very insecure.
+    // Use bcrypt.compare(password, user.password) instead.
     if (user.password !== password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // No JWT, just return user
+    // The 'user' object now contains the 'uid' field.
+    // Your Flutter app will receive it here.
     res.json({ message: 'Login successful', data: user });
+
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
 };
+
+
 
 exports.updateUser = async (req, res) => {
   try {

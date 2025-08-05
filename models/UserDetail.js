@@ -9,6 +9,12 @@ const userSchema = new mongoose.Schema({
   profile: String, // Cloudinary URL
   dateOfBirth: Date,
   timeOfBirth: String, // or Date if storing with time zone logic
+  uid: { // <-- ADD THIS FIELD
+    type: Number,
+    required: true,
+    unique: true,
+    index: true // Add an index for faster lookups
+  },
 
   wallet: {
     balance: { type: Number, default: 0 },
