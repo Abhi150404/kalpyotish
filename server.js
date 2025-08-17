@@ -8,7 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const astrologerRoutes = require('./routes/astrologerRoutes'); //spellcheck
 const dropdownRoutes = require('./routes/dropdownRoutes');
 const transitRoutes = require('./routes/transitRoutes');
-// const poojaRoutes = require('./routes/poojaRoutes');
+const poojaRoutes = require('./routes/poojaRoutes');
 const productRoutes = require('./routes/productRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -31,7 +31,7 @@ const kundaliRoutes = require('./routes/kundaliRoutes');
 app.use('/api/kundali', kundaliRoutes);
 const bannerRoutes = require('./routes/bannerRoutes');
 app.use('/api/banners', bannerRoutes);
-// app.use('/api', poojaRoutes);
+app.use('/api', poojaRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/admin', adminRoutes);
