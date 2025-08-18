@@ -197,7 +197,7 @@ exports.updateFcmToken = async (req, res) => {
       return res.status(400).json({ message: "FCM Token is required" });
     }
 
-    const user = await UserDetail.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       id,
       { fcmToken },
       { new: true }
