@@ -190,7 +190,7 @@ exports.verifyOTP = (req, res) =>{
 
 exports.updateFcmToken = async (req, res) => {
   try {
-    const { id } = req.params; // userId
+    const { id } = req.params;  // Mongo _id
     const { fcmToken } = req.body;
 
     if (!fcmToken) {
@@ -213,7 +213,7 @@ exports.updateFcmToken = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating FCM token:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
