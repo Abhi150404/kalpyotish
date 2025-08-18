@@ -187,6 +187,36 @@ exports.verifyOTP = (req, res) =>{
   res.json({ message: "Email verified successfully" });
 }
 
+
+exports.updateFcmToken = async (req, res) => {
+  try {
+    const { id } = req.params; // userId
+    const { fcmToken } = req.body;
+
+    if (!fcmToken) {
+      return res.status(400).json({ message: "FCM Token is required" });
+    }
+
+    const user = await UserDetail.findByIdAndUpdate(
+      id,
+      { fcmToken },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "FCM token updated successfully",
+      user
+    });
+  } catch (error) {
+    console.error("Error updating FCM token:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // To check if email is verified before registration
 // function isEmailVerified(email) {
 //   return emailStore[email]?.verified === true;

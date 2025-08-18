@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     index: true // Add an index for faster lookups
   },
+   fcmToken: { type: String, default: null },
 
   wallet: {
     balance: { type: Number, default: 0 },
