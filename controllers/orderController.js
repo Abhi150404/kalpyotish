@@ -9,12 +9,12 @@ const razorpay = new Razorpay({
   key_secret: 'doil69i2489WGAWPcPLdXLbt'
 });
 
-// ...existing code...
+// Create Order
 const createOrder = async (req, res) => {
   try {
-    const { productId, userId, amount, sessionId } = req.body; // <-- add sessionId
+    const { productId, userId, amount, sessionId } = req.body;
 
-    if (!productId || !userId || !amount || !sessionId) { // <-- check sessionId
+    if (!productId || !userId || !amount || !sessionId) {
       return res.status(400).json({ message: 'Product ID, user ID, amount, and sessionId are required' });
     }
 
@@ -36,14 +36,18 @@ const createOrder = async (req, res) => {
       payment_capture: 1
     });
 
+    // Generate a unique customProductId
+    const customProductId = `CPID_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+
     // Save order in your DB
     const order = new Order({
       product: productId,
       user: userId,
-      sessionId, // <-- add sessionId here
+      sessionId,
       razorpayOrderId: razorpayOrder.id,
       amount,
-      status: 'PENDING'
+      status: 'PENDING',
+      customProductId // <-- ensure uniqueness
     });
 
     await order.save();
@@ -56,7 +60,7 @@ const createOrder = async (req, res) => {
     res.status(201).json({
       message: 'Order created successfully',
       data: populatedOrder,
-      razorpayOrderId: razorpayOrder.id // Send Razorpay order ID to client
+      razorpayOrderId: razorpayOrder.id
     });
 
   } catch (error) {
@@ -64,7 +68,6 @@ const createOrder = async (req, res) => {
     res.status(500).json({ message: 'Failed to create order', error: error.message || error });
   }
 };
-
 
 // Get order by MongoDB _id or Razorpay order ID
 const getOrder = async (req, res) => {
