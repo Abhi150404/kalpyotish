@@ -9,12 +9,13 @@ const razorpay = new Razorpay({
   key_secret: 'doil69i2489WGAWPcPLdXLbt'
 });
 
+// ...existing code...
 const createOrder = async (req, res) => {
   try {
-    const { productId, userId, amount } = req.body;
+    const { productId, userId, amount, sessionId } = req.body; // <-- add sessionId
 
-    if (!productId || !userId || !amount) {
-      return res.status(400).json({ message: 'Product ID, user ID, and amount are required' });
+    if (!productId || !userId || !amount || !sessionId) { // <-- check sessionId
+      return res.status(400).json({ message: 'Product ID, user ID, amount, and sessionId are required' });
     }
 
     const product = await Product.findById(productId);
@@ -39,6 +40,7 @@ const createOrder = async (req, res) => {
     const order = new Order({
       product: productId,
       user: userId,
+      sessionId, // <-- add sessionId here
       razorpayOrderId: razorpayOrder.id,
       amount,
       status: 'PENDING'
@@ -63,9 +65,6 @@ const createOrder = async (req, res) => {
   }
 };
 
-
-
-// ...existing code...
 
 // Get order by MongoDB _id or Razorpay order ID
 const getOrder = async (req, res) => {
