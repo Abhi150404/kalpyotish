@@ -12,6 +12,6 @@ router.get('/users', getUserList);//
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
 router.put('/update-fcm/:id',authController.updateFcmToken);
-
+router.get('/user/:id', authController.getUserById);
 
 module.exports = router;

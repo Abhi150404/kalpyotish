@@ -217,6 +217,24 @@ exports.updateFcmToken = async (req, res) => {
   }
 };
 
+
+// ...existing code...
+
+// Get user by MongoDB _id
+exports.getUserById = async (req, res) => {
+  try {
+    const { id } = req.params; // expects MongoDB _id
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ message: "User fetched successfully", data: user });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user", error: err.message });
+  }
+};
+
+// ...existing code...
 // To check if email is verified before registration
 // function isEmailVerified(email) {
 //   return emailStore[email]?.verified === true;
