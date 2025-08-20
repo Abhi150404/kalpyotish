@@ -12,11 +12,16 @@ const astrologerSchema = new mongoose.Schema({
     call: { type: Boolean, default: false },
     videoCall: { type: Boolean, default: false }
   },
-  status: {
+ status: {
     type: String,
-    enum: ['active', 'inactive'],
-    default: 'inactive'
-  }
+    enum: ['live', 'offline'],
+    default: 'offline'
+  },
+
+  agoraToken: { type: String, default: null },
+  channelId: { type: String, default: null }
+
+  
 }, { timestamps: true });
 
 

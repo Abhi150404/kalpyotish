@@ -185,20 +185,50 @@ exports.deleteAstrologer = async (req, res) => {
 };
 
 
+const { RtcTokenBuilder, RtcRole } = require('agora-token');
+
+
+const APP_ID = "cdb07bd78545426d8f8d94396c1226e3";
+const APP_CERTIFICATE = "744e98ca28a243acae8f37d54df011ae";
+
 exports.updateAvailabilityStatus = async (req, res) => {
   try {
-    const { id } = req.params; // astrologer's _id from URL
-    const { status } = req.body; // live or offline
+    const { id } = req.params;
+    const { status } = req.body;
 
     if (!['live', 'offline'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
-    const updated = await Astrologer.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
+    let updateData = { status };
+
+    if (status === 'live') {
+      // Generate Agora token
+      const channelName = id; // astrologer's _id as channel
+      const userId = Date.now(); // unique UID
+      const role = RtcRole.PUBLISHER;
+      const expirationTimeInSeconds = 3600;
+      const privilegeExpiredTs = Math.floor(Date.now() / 1000) + expirationTimeInSeconds;
+
+      const token = RtcTokenBuilder.buildTokenWithUid(
+        APP_ID,
+        APP_CERTIFICATE,
+        channelName,
+        userId,
+        role,
+        privilegeExpiredTs
+      );
+
+      updateData.agoraToken = token;
+      updateData.channelId = channelName;
+
+    } else if (status === 'offline') {
+      updateData.agoraToken = null;
+      updateData.channelId = null;
+    }
+
+    // Update astrologer and return full profile
+    const updated = await Astrologer.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!updated) {
       return res.status(404).json({ message: 'Astrologer not found' });
@@ -206,13 +236,30 @@ exports.updateAvailabilityStatus = async (req, res) => {
 
     res.status(200).json({
       message: `Astrologer status updated to ${status}`,
-      data: updated
+      profile: {
+        _id: updated._id,
+        name: updated.name,
+        number: updated.number,
+        email: updated.email,
+        experience: updated.experience,
+        skills: updated.skills,
+        profilePhoto: updated.profilePhoto,
+        availability: updated.availability,
+        charges: updated.charges,
+        status: updated.status,
+        agoraToken: updated.agoraToken,
+        channelId: updated.channelId,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt
+      }
     });
+
   } catch (err) {
     console.error('Availability update error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 
 exports.approveAstrologer = async (req, res) => {
   try {
