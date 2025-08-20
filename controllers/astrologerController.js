@@ -185,7 +185,7 @@ exports.deleteAstrologer = async (req, res) => {
 };
 
 
-const { RtcTokenBuilder, RtcRole } = require('agora-token');
+const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 
 
 const APP_ID = "cdb07bd78545426d8f8d94396c1226e3";
@@ -205,7 +205,7 @@ exports.updateAvailabilityStatus = async (req, res) => {
     if (status === 'live') {
       // Generate Agora token
       const channelName = id; // astrologer's _id as channel
-      const userId = Date.now(); // unique UID
+      const uid = Date.now(); // unique integer user ID
       const role = RtcRole.PUBLISHER;
       const expirationTimeInSeconds = 3600;
       const privilegeExpiredTs = Math.floor(Date.now() / 1000) + expirationTimeInSeconds;
@@ -214,17 +214,18 @@ exports.updateAvailabilityStatus = async (req, res) => {
         APP_ID,
         APP_CERTIFICATE,
         channelName,
-        userId,
+        uid,
         role,
         privilegeExpiredTs
       );
 
       updateData.agoraToken = token;
       updateData.channelId = channelName;
-
-    } else if (status === 'offline') {
+      updateData.uid = uid;
+    } else {
       updateData.agoraToken = null;
       updateData.channelId = null;
+      updateData.uid = null;
     }
 
     // Update astrologer and return full profile
@@ -249,6 +250,7 @@ exports.updateAvailabilityStatus = async (req, res) => {
         status: updated.status,
         agoraToken: updated.agoraToken,
         channelId: updated.channelId,
+        uid: updated.uid,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt
       }
@@ -259,6 +261,7 @@ exports.updateAvailabilityStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 
 
 

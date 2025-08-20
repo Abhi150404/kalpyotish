@@ -1,4 +1,4 @@
-const { RtcTokenBuilder, RtcRole } = require('agora-token');
+const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
 
 const generateAgoraToken = (req, res) => {
   const APP_ID = "cdb07bd78545426d8f8d94396c1226e3";
@@ -9,6 +9,8 @@ const generateAgoraToken = (req, res) => {
   }
 
   const { channelName, userId, callType } = req.body;
+
+  console.log("Incoming Data:", { channelName, userId, callType });
 
   if (!channelName || !userId) {
     return res.status(400).json({ error: "channelName and userId are required" });
@@ -24,7 +26,7 @@ const generateAgoraToken = (req, res) => {
       APP_ID,
       APP_CERTIFICATE,
       channelName,
-      userId, // keep as string
+      userId, // string account
       role,
       privilegeExpiredTs
     );
@@ -35,11 +37,11 @@ const generateAgoraToken = (req, res) => {
       channelName,
       userId,
       callType,
-      message: "Token generated successfully with User Account method"
+      message: "Token generated successfully"
     });
   } catch (error) {
-    console.error("Error generating token:", error);
-    return res.status(500).json({ error: "Failed to generate token" });
+    console.error("Error generating token:", error.message);
+    return res.status(500).json({ error: "Failed to generate token", details: error.message });
   }
 };
 
