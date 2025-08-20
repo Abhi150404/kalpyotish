@@ -1,18 +1,20 @@
+const Razorpay = require('razorpay');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/UserDetail');
 
-const generateCustomProductId = () => {
-  const random10Digit = Math.floor(1000000000 + Math.random() * 9000000000);
-  return `#KJ${random10Digit}`;
-};
+// Razorpay instance
+const razorpay = new Razorpay({
+  key_id: 'rzp_live_E5OD8Hqnnuv2j5',
+  key_secret: 'doil69i2489WGAWPcPLdXLbt'
+});
 
 const createOrder = async (req, res) => {
   try {
-    const { productId, sessionId, userId } = req.body;
+    const { productId, userId, amount } = req.body;
 
-    if (!productId || !sessionId || !userId) {
-      return res.status(400).json({ message: 'Product ID, session ID and user ID are required' });
+    if (!productId || !userId || !amount) {
+      return res.status(400).json({ message: 'Product ID, user ID, and amount are required' });
     }
 
     const product = await Product.findById(productId);
@@ -25,13 +27,20 @@ const createOrder = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const customProductId = generateCustomProductId();
+    // Create order in Razorpay (amount in paise)
+    const razorpayOrder = await razorpay.orders.create({
+      amount: amount * 100, // Razorpay expects amount in paise
+      currency: 'INR',
+      receipt: `receipt_${Date.now()}`,
+      payment_capture: 1
+    });
 
+    // Save order in your DB
     const order = new Order({
       product: productId,
-      sessionId,
       user: userId,
-      customProductId,
+      razorpayOrderId: razorpayOrder.id,
+      amount,
       status: 'PENDING'
     });
 
@@ -44,7 +53,8 @@ const createOrder = async (req, res) => {
 
     res.status(201).json({
       message: 'Order created successfully',
-      data: populatedOrder
+      data: populatedOrder,
+      razorpayOrderId: razorpayOrder.id // Send Razorpay order ID to client
     });
 
   } catch (error) {
@@ -53,6 +63,41 @@ const createOrder = async (req, res) => {
   }
 };
 
+
+
+// ...existing code...
+
+// Get order by MongoDB _id or Razorpay order ID
+const getOrder = async (req, res) => {
+  try {
+    const { id } = req.params; // Can be MongoDB _id or Razorpay order ID
+
+    // Try finding by MongoDB _id first
+    let order = await Order.findById(id)
+      .populate('product', 'name price description images')
+      .populate('user', 'name email mobileNo');
+
+    // If not found, try by Razorpay order ID
+    if (!order) {
+      order = await Order.findOne({ razorpayOrderId: id })
+        .populate('product', 'name price description images')
+        .populate('user', 'name email mobileNo');
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json({
+      message: 'Order fetched successfully',
+      data: order
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch order', error: error.message });
+  }
+};
+
 module.exports = {
-  createOrder
+  createOrder,
+  getOrder
 };
