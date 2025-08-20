@@ -15,6 +15,7 @@ router.get('/all', astrologerController.getAllAstrologers);
 router.get('/dropdowns', astrologerController.getDropdownOptions);
 router.get('/astrologerbyId/:id', astrologerController.getAstrologerById);
 router.patch('/update-availability/:id', astrologerController.updateAvailability);
+router.get('/live', astrologerController.getLiveAstrologers);
 router.get('/astrologer-stats', getAstrologerStats);
 
 
