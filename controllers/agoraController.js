@@ -16,10 +16,11 @@ const generateAgoraToken = (req, res) => {
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   try {
-    let token, numericUid = null;
+    let token;
+    let numericUid = null;
 
     if (/^\d+$/.test(userId)) {
-      // ✅ Numeric userId → 006 token
+      // ✅ numeric userId → 006 token
       numericUid = parseInt(userId, 10);
       token = RtcTokenBuilder.buildTokenWithUid(
         APP_ID,
@@ -30,12 +31,12 @@ const generateAgoraToken = (req, res) => {
         privilegeExpiredTs
       );
     } else {
-      // ✅ String userId (e.g. MongoDB ObjectId) → 007 token
+      // ✅ string userId → 007 token
       token = RtcTokenBuilder.buildTokenWithAccount(
         APP_ID,
         APP_CERTIFICATE,
         channelName,
-        userId,
+        userId, // use raw string
         role,
         privilegeExpiredTs
       );
@@ -55,7 +56,7 @@ const generateAgoraToken = (req, res) => {
     return res.status(500).json({
       error: "Failed to generate token",
       details: error.message,
-      hint: "Use buildTokenWithUid for numeric IDs and buildTokenWithAccount for string IDs"
+      hint: "Ensure UID is numeric for 006 or string for 007 tokens"
     });
   }
 };
