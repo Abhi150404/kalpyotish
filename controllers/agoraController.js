@@ -10,51 +10,35 @@ const generateAgoraToken = (req, res) => {
     return res.status(400).json({ error: "channelName and userId are required" });
   }
 
+  // Ensure userId is treated as a string for 007 token generation.
+  // If userId is passed as a number, convert it to string.
+  const userAccount = String(userId); 
+
   const role = RtcRole.PUBLISHER;
   const expirationTimeInSeconds = 3600;
   const currentTimestamp = Math.floor(Date.now() / 1000);
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   try {
-    let token;
-    let numericUid = null;
+    // Force 007 token generation by always using buildTokenWithAccount
+    const token = RtcTokenBuilder.buildTokenWithAccount(
+      APP_ID,
+      APP_CERTIFICATE,
+      channelName,
+      userAccount, // Always use the string account
+      role,
+      privilegeExpiredTs
+    );
 
-    // This condition checks if the userId string contains ONLY digits.
-    // An _id like "687e951792ad1e628ec4a8c0" contains letters and will NOT satisfy this condition.
-    if (/^\d+$/.test(userId)) {
-      // This block will be executed if userId is purely numeric (e.g., "12345")
-      // It generates an 006 token.
-      numericUid = parseInt(userId, 10);
-      token = RtcTokenBuilder.buildTokenWithUid(
-        APP_ID,
-        APP_CERTIFICATE,
-        channelName,
-        numericUid,
-        role,
-        privilegeExpiredTs
-      );
-      console.log(`Generated 006 token for numeric userId: ${userId}`);
-    } else {
-      // This block will be executed if userId contains non-digit characters
-      // (like "687e951792ad1e628ec4a8c0", UUIDs, emails, etc.)
-      // It generates an 007 token using the string as the account.
-      token = RtcTokenBuilder.buildTokenWithAccount(
-        APP_ID,
-        APP_CERTIFICATE,
-        channelName,
-        userId, // Use the string userId directly as the account
-        role,
-        privilegeExpiredTs
-      );
-      console.log(`Generated 007 token for string userId (_id): ${userId}`);
-    }
+    // For 007 tokens, numericUid will not be directly used/returned by Agora's build method
+    const numericUid = null; 
 
     return res.status(200).json({
       token,
       appId: APP_ID,
       channelName,
-      userId,
-      numericUid,
+      userId: userAccount, // Return the userAccount that was used
+      numericUid, // Will always be null when forcing 007
       callType,
       message: `Token (${token.substring(0, 3)}) generated successfully`
     });
@@ -63,7 +47,7 @@ const generateAgoraToken = (req, res) => {
     return res.status(500).json({
       error: "Failed to generate token",
       details: error.message,
-      hint: "Ensure UID is numeric for 006 or string for 007 tokens"
+      hint: "Ensure APP_ID and APP_CERTIFICATE are correct and you're providing valid channelName/userId"
     });
   }
 };
