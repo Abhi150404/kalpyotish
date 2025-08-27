@@ -16,17 +16,18 @@ const generateAgoraToken = (req, res) => {
     return res.status(400).json({ error: "channelName and userId are required" });
   }
 
-  const role = RtcRole.PUBLISHER;
-  const expirationTimeInSeconds = 3600;
+  const role = RtcRole.PUBLISHER; // Or SUBSCRIBER if needed
+  const expirationTimeInSeconds = 3600; // 1 hour
   const currentTimestamp = Math.floor(Date.now() / 1000);
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   try {
-    const token = RtcTokenBuilder.buildTokenWithAccount(
+    // 👇 Use buildTokenWithUid for production (generates "007" token)
+    const token = RtcTokenBuilder.buildTokenWithUid(
       APP_ID,
       APP_CERTIFICATE,
       channelName,
-      userId, // string account
+      Number(userId),  // must be a number here
       role,
       privilegeExpiredTs
     );
@@ -37,7 +38,7 @@ const generateAgoraToken = (req, res) => {
       channelName,
       userId,
       callType,
-      message: "Token generated successfully"
+      message: "Production token (007) generated successfully"
     });
   } catch (error) {
     console.error("Error generating token:", error.message);
