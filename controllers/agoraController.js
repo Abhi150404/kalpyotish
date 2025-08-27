@@ -2,14 +2,13 @@ const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
 const crypto = require("crypto");
 
 function convertUserIdToUid(userId) {
-  // Hash string to consistent numeric UID (0 - 2^32 range)
   const hash = crypto.createHash("md5").update(userId).digest("hex");
-  return parseInt(hash.substring(0, 8), 16); 
+  return parseInt(hash.substring(0, 8), 16); // ensures number
 }
 
 const generateAgoraToken = (req, res) => {
   const APP_ID = "cdb07bd78545426d8f8d94396c1226e3";
-  const APP_CERTIFICATE = "744e98ca28a243acae8f37d54df011ae"; 
+  const APP_CERTIFICATE = "744e98ca28a243acae8f37d54df011ae";
 
   const { channelName, userId, callType } = req.body;
 
@@ -23,14 +22,18 @@ const generateAgoraToken = (req, res) => {
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   try {
-    // 👇 convert string userId -> numeric UID
-    const numericUid = Number.isInteger(userId) ? userId : convertUserIdToUid(userId);
+    // Ensure UID is numeric
+    const numericUid = Number.isInteger(userId)
+      ? userId
+      : convertUserIdToUid(String(userId));
+
+    console.log("Generated UID:", numericUid, "Type:", typeof numericUid);
 
     const token = RtcTokenBuilder.buildTokenWithUid(
       APP_ID,
       APP_CERTIFICATE,
       channelName,
-      numericUid,
+      numericUid, // must be number
       role,
       privilegeExpiredTs
     );
@@ -39,8 +42,8 @@ const generateAgoraToken = (req, res) => {
       token,
       appId: APP_ID,
       channelName,
-      userId,        // original string (for frontend reference)
-      numericUid,    // used for Agora
+      userId,
+      numericUid,
       callType,
       message: "Production token (007) generated successfully"
     });
