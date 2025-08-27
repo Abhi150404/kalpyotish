@@ -1,33 +1,36 @@
 const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
+const crypto = require("crypto");
+
+function convertUserIdToUid(userId) {
+  // Hash string to consistent numeric UID (0 - 2^32 range)
+  const hash = crypto.createHash("md5").update(userId).digest("hex");
+  return parseInt(hash.substring(0, 8), 16); 
+}
 
 const generateAgoraToken = (req, res) => {
   const APP_ID = "cdb07bd78545426d8f8d94396c1226e3";
   const APP_CERTIFICATE = "744e98ca28a243acae8f37d54df011ae"; 
 
-  if (!APP_ID || !APP_CERTIFICATE) {
-    return res.status(500).json({ error: "Agora credentials missing" });
-  }
-
   const { channelName, userId, callType } = req.body;
-
-  console.log("Incoming Data:", { channelName, userId, callType });
 
   if (!channelName || !userId) {
     return res.status(400).json({ error: "channelName and userId are required" });
   }
 
-  const role = RtcRole.PUBLISHER; // Or SUBSCRIBER if needed
-  const expirationTimeInSeconds = 3600; // 1 hour
+  const role = RtcRole.PUBLISHER;
+  const expirationTimeInSeconds = 3600;
   const currentTimestamp = Math.floor(Date.now() / 1000);
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   try {
-    // 👇 Use buildTokenWithUid for production (generates "007" token)
+    // 👇 convert string userId -> numeric UID
+    const numericUid = Number.isInteger(userId) ? userId : convertUserIdToUid(userId);
+
     const token = RtcTokenBuilder.buildTokenWithUid(
       APP_ID,
       APP_CERTIFICATE,
       channelName,
-      Number(userId),  // must be a number here
+      numericUid,
       role,
       privilegeExpiredTs
     );
@@ -36,7 +39,8 @@ const generateAgoraToken = (req, res) => {
       token,
       appId: APP_ID,
       channelName,
-      userId,
+      userId,        // original string (for frontend reference)
+      numericUid,    // used for Agora
       callType,
       message: "Production token (007) generated successfully"
     });
