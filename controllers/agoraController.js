@@ -19,8 +19,9 @@ const generateAgoraToken = (req, res) => {
     let token;
     let numericUid = null;
 
+    // The key here is to ensure that userId is NOT a purely numeric string
     if (/^\d+$/.test(userId)) {
-      // ✅ numeric userId → 006 token
+      // This block generates 006 tokens (numeric Uid)
       numericUid = parseInt(userId, 10);
       token = RtcTokenBuilder.buildTokenWithUid(
         APP_ID,
@@ -30,8 +31,9 @@ const generateAgoraToken = (req, res) => {
         role,
         privilegeExpiredTs
       );
+      console.log("Generated 006 token for numeric userId:", userId);
     } else {
-      // ✅ string userId → 007 token
+      // This block generates 007 tokens (string account)
       token = RtcTokenBuilder.buildTokenWithAccount(
         APP_ID,
         APP_CERTIFICATE,
@@ -40,6 +42,7 @@ const generateAgoraToken = (req, res) => {
         role,
         privilegeExpiredTs
       );
+      console.log("Generated 007 token for string userId:", userId);
     }
 
     return res.status(200).json({
@@ -47,7 +50,7 @@ const generateAgoraToken = (req, res) => {
       appId: APP_ID,
       channelName,
       userId,
-      numericUid,
+      numericUid, // will be null if 007 token is generated
       callType,
       message: `Token (${token.substring(0, 3)}) generated successfully`
     });
