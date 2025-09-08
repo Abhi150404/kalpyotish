@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "astrology app and admin backend ",
   "main": "server.js",
+   "type": "commonjs", 
   "scripts": {
     "test": "server.js",
     "start": "node server.js"

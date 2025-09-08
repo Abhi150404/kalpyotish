@@ -15,7 +15,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const communicationRoutes = require('./routes/communicationRoutes');
 const SessionRoutes = require('./routes/sessionRoutes');
 const walletRoutes = require('./routes/walletRoutes');
-import notificationRoutes from "./routes/notificationRoutes.js";
+const notificationRoutes = require("./routes/notificationRoutes.js");
 
 
 
