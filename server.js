@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const communicationRoutes = require('./routes/communicationRoutes');
 const SessionRoutes = require('./routes/sessionRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 
 
@@ -40,6 +41,7 @@ app.use('/api/sessions', SessionRoutes);
 app.use('/api/agora', agoraRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/wallet-money', walletRoutes);
+app.use("/api/notification", notificationRoutes);
 
 
 
