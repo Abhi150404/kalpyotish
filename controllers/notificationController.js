@@ -1,4 +1,5 @@
 const NotificationToken = require("../models/NotificationToken");
+const Notification = require("../models/Notification");
 
 // Save new FCM token
 exports.saveFcmToken = async (req, res) => {
@@ -51,6 +52,62 @@ exports.updateFcmToken = async (req, res) => {
     res.json({ message: "FCM token updated", data: tokenDoc });
   } catch (error) {
     console.error("Error updating FCM token:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+// POST - Create a notification
+exports.createNotification = async (req, res) => {
+  try {
+    const { userId, userType, title, body } = req.body;
+
+    if (!userId || !userType || !title || !body) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (!["UserDetail", "Astrologer"].includes(userType)) {
+      return res.status(400).json({ message: "Invalid userType" });
+    }
+
+    const newNotification = new Notification({
+      userId,
+      userType,
+      title,
+      body,
+    });
+
+    await newNotification.save();
+
+    res.status(201).json({
+      message: "Notification created successfully",
+      data: newNotification,
+    });
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// GET - Fetch notifications
+exports.getNotifications = async (req, res) => {
+  try {
+    const { userId, userType } = req.query;
+
+    let query = {};
+    if (userId && userType) {
+      query = { userId, userType };
+    }
+
+    const notifications = await Notification.find(query).sort({ createdAt: -1 });
+
+    res.json({
+      message: "Notifications fetched successfully",
+      data: notifications,
+    });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
