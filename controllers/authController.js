@@ -1,4 +1,5 @@
 const User = require('../models/UserDetail');
+const NotificationToken = require("../models/NotificationToken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
@@ -46,25 +47,32 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // You need to fetch the user from the database first
+    // Find user
     const user = await User.findOne({ email });
-
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // This is plain text comparison. Very insecure.
-    // Use bcrypt.compare(password, user.password) instead.
+    // Password check (⚠️ replace with bcrypt in production)
     if (user.password !== password) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // The 'user' object now contains the 'uid' field.
-    // Your Flutter app will receive it here.
-    res.json({ message: 'Login successful', data: user });
+    // Find FCM token
+    const fcmTokenDoc = await NotificationToken.findOne({
+      userId: user._id,
+      userType: "UserDetail",
+    });
 
+    res.json({
+      message: "Login successful",
+      data: {
+        ...user.toObject(),
+        fcmToken: fcmTokenDoc ? fcmTokenDoc.fcmToken : null,
+      },
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Login failed', error: err.message });
+    res.status(500).json({ message: "Login failed", error: err.message });
   }
 };
 

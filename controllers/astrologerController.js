@@ -1,4 +1,5 @@
 const Astrologer = require('../models/Astrologer');
+const NotificationToken = require("../models/NotificationToken");
 
 exports.registerAstrologer = async (req, res) => {
   try {
@@ -37,7 +38,7 @@ exports.loginAstrologer = async (req, res) => {
     if (!loginId) {
       return res.status(400).json({
         success: false,
-        message: 'Email or phone number is required',
+        message: "Email or phone number is required",
       });
     }
 
@@ -48,22 +49,29 @@ exports.loginAstrologer = async (req, res) => {
     if (!astrologer) {
       return res.status(404).json({
         success: false,
-        message: 'Astrologer not found',
+        message: "Astrologer not found",
       });
     }
 
-    // If you add password later, verify here
+    // Find FCM token
+    const fcmTokenDoc = await NotificationToken.findOne({
+      userId: astrologer._id,
+      userType: "Astrologer",
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
-      data: astrologer,
+      message: "Login successful",
+      data: {
+        ...astrologer.toObject(),
+        fcmToken: fcmTokenDoc ? fcmTokenDoc.fcmToken : null,
+      },
     });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error("Login error:", err);
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: err.message,
     });
   }
