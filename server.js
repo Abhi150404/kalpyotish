@@ -17,6 +17,7 @@ const SessionRoutes = require('./routes/sessionRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const notificationRoutes = require("./routes/notificationRoutes.js");
 const ReviewRoutes = require("./routes/reviewRoutes.js");
+const contactRoutes = require("./routes/contactRoutes");
 
 
 
@@ -44,6 +45,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/wallet-money', walletRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/review",ReviewRoutes);
+app.use("/api/contact", contactRoutes);
 
 
 
