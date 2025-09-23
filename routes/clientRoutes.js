@@ -11,4 +11,5 @@ router.post(
   clientController.signup
 );
 
+router.get("/:id", clientController.getClientById);
 module.exports = router;

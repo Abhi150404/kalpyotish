@@ -63,3 +63,35 @@ exports.signup = async (req, res) => {
     });
   }
 };
+
+
+
+// ✅ Get Client by ID
+exports.getClientById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const client = await Client.findById(id);
+
+    if (!client) {
+      return res.status(404).json({
+        statusCode: 404,
+        success: false,
+        message: "Client not found",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      success: true,
+      data: client,
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
