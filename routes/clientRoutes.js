@@ -12,4 +12,9 @@ router.post(
 );
 
 router.get("/:id", clientController.getClientById);
+
+router.put("/update/:id", upload.single("profile"), clientController.updateClient);
+
+// ✅ Delete client by ID
+router.delete("delete/:id", clientController.deleteClient);
 module.exports = router;

@@ -95,3 +95,108 @@ exports.getClientById = async (req, res) => {
     });
   }
 };
+
+
+
+
+// ✅ Update Client by ID
+exports.updateClient = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      email,
+      gender,
+      dateOfBirth,
+      timeOfBirth,
+      placeOfBirth,
+      preferredLanguages,
+      concern,
+    } = req.body;
+
+    let updateData = {
+      name,
+      email,
+      gender,
+      dateOfBirth,
+      timeOfBirth,
+      placeOfBirth,
+      concern,
+    };
+
+    // ✅ Handle preferredLanguages if sent
+    if (preferredLanguages) {
+      try {
+        updateData.preferredLanguages = JSON.parse(preferredLanguages);
+      } catch (err) {
+        return res.status(400).json({
+          statusCode: 400,
+          success: false,
+          message: "preferredLanguages must be a valid JSON array",
+        });
+      }
+    }
+
+    // ✅ If profile uploaded, update profile field
+    if (req.file && req.file.path) {
+      updateData.profile = req.file.path; // Cloudinary URL
+    }
+
+    const updatedClient = await Client.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedClient) {
+      return res.status(404).json({
+        statusCode: 404,
+        success: false,
+        message: "Client not found",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      success: true,
+      message: "Client updated successfully",
+      data: updatedClient,
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ Delete Client by ID
+exports.deleteClient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedClient = await Client.findByIdAndDelete(id);
+
+    if (!deletedClient) {
+      return res.status(404).json({
+        statusCode: 404,
+        success: false,
+        message: "Client not found",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      success: true,
+      message: "Client deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
