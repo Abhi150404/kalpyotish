@@ -19,6 +19,7 @@ const notificationRoutes = require("./routes/notificationRoutes.js");
 const ReviewRoutes = require("./routes/reviewRoutes.js");
 const contactRoutes = require("./routes/contactRoutes");
 const langRoutes = require('./routes/languageRoutes.js');
+const clientRoutes = require('./routes/clientRoutes.js');
 
 
 
@@ -47,6 +48,7 @@ app.use("/api/notification", notificationRoutes);
 app.use("/api/review",ReviewRoutes);
 app.use("/api/contact", contactRoutes);
 app.use('/api', langRoutes);
+app.use('/api/user',clientRoutes);
 
 
 
