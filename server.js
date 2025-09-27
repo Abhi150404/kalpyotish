@@ -20,6 +20,7 @@ const ReviewRoutes = require("./routes/reviewRoutes.js");
 const contactRoutes = require("./routes/contactRoutes");
 const langRoutes = require('./routes/languageRoutes.js');
 const clientRoutes = require('./routes/clientRoutes.js');
+const otpRoutes = require("./routes/otpRoutes");
 
 
 
@@ -49,6 +50,7 @@ app.use("/api/review",ReviewRoutes);
 app.use("/api/contact", contactRoutes);
 app.use('/api', langRoutes);
 app.use('/api/user',clientRoutes);
+app.use("/api/otp", otpRoutes);
 
 
 
