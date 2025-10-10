@@ -111,9 +111,24 @@ exports.updateProfilePhoto = async (req, res) => {
 
 exports.getAllAstrologers = async (req, res) => {
   try {
-    const astrologers = await Astrologer.find();
+    const { skill, experience } = req.query; // filters from params
+    let filter = {};
+
+    // Skill filter (assuming skills is an array in DB)
+    if (skill) {
+      filter.skills = { $in: [skill] }; 
+    }
+
+    // Experience filter (greater than or equal to given value)
+    if (experience) {
+      filter.experience = { $gte: Number(experience) };
+    }
+
+    const astrologers = await Astrologer.find(filter);
+
     res.status(200).json({
       message: 'Astrologers fetched successfully',
+      count: astrologers.length,
       data: astrologers
     });
   } catch (err) {
@@ -121,6 +136,7 @@ exports.getAllAstrologers = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 
 exports.getAstrologerStats = async (req, res) => {
   try {
