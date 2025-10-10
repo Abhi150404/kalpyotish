@@ -20,7 +20,11 @@ const userSchema = new mongoose.Schema({
   wallet: {
     balance: { type: Number, default: 0 },
     currency: { type: String, default: 'INR' }
-  }
+  },
+ 
+isVerified: { type: Boolean, default: false },
+token: { type: String, default: null } 
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('UserDetail', userSchema, 'UserDetail');
