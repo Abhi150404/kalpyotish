@@ -6,10 +6,21 @@ const crypto = require("crypto");
 const emailStore = {};
 
 const { getNextSequenceValue } = require('../utilis/sequenceGenerator');
+
 exports.signup = async (req, res) => {
   try {
     const { name, email, password, gender, city, mobileNo, dateOfBirth, timeOfBirth } = req.body;
     const profile = req.file?.path;
+
+    // Email validation (must contain @gmail.com)
+    if (!email || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+      return res.status(400).json({ message: 'Email must be a valid Gmail address (e.g., example@gmail.com)' });
+    }
+
+    // Mobile number validation (must be exactly 10 digits)
+    if (!mobileNo || !/^\d{10}$/.test(mobileNo)) {
+      return res.status(400).json({ message: 'Mobile number must contain exactly 10 digits' });
+    }
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -17,13 +28,13 @@ exports.signup = async (req, res) => {
     }
 
     // Get the next unique numeric ID for the new user
-    const userUid = await getNextSequenceValue('user_uid'); // <-- USE THE FUNCTION
+    const userUid = await getNextSequenceValue('user_uid');
 
     const newUser = new User({
-      uid: userUid, // <-- ASSIGN THE UID
+      uid: userUid,
       name,
       email,
-      password, // Again, please hash this password!
+      password, // ⚠️ You should hash the password before saving!
       gender,
       city,
       mobileNo,
@@ -39,6 +50,7 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 };
+
 
 
 
