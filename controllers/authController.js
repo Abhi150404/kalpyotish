@@ -22,9 +22,16 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: 'Mobile number must contain exactly 10 digits' });
     }
 
-    const existing = await User.findOne({ email });
-    if (existing) {
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
       return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Check if mobile number already exists
+    const existingMobile = await User.findOne({ mobileNo });
+    if (existingMobile) {
+      return res.status(400).json({ message: 'Mobile number already exists' });
     }
 
     // Get the next unique numeric ID for the new user
@@ -34,7 +41,7 @@ exports.signup = async (req, res) => {
       uid: userUid,
       name,
       email,
-      password, // ⚠️ You should hash the password before saving!
+      password, // ⚠️ Make sure to hash this before saving
       gender,
       city,
       mobileNo,
@@ -50,6 +57,7 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 };
+
 
 
 
