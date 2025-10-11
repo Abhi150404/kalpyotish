@@ -6,15 +6,17 @@ const userSchema = new mongoose.Schema({
   gender: String,
   city: String,
   mobileNo: String,
-  profile: String, // Cloudinary URL
+  profile: String, 
   dateOfBirth: Date,
-  timeOfBirth: String, // or Date if storing with time zone logic
-  uid: { // <-- ADD THIS FIELD
-    type: Number,
-    required: true,
-    unique: true,
-    index: true // Add an index for faster lookups
-  },
+  timeOfBirth: String, 
+uid: { 
+  type: Number,
+  unique: true,
+  index: true,
+
+    required: false
+},
+
    fcmToken: { type: String, default: null },
 
   wallet: {

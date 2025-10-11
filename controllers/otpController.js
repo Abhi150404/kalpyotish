@@ -1,14 +1,32 @@
-const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const User = require("../models/UserDetail");
+
+// Helper function to generate unique numeric uid
+
+
+// Helper function to generate unique numeric uid
+// This is a basic example; for a high-traffic app, consider more robust ID generation.
+const generateUniqueUid = async () => {
+  let newUid;
+  let isUnique = false;
+  while (!isUnique) {
+    // Generate a number, for example, based on timestamp and a small random component
+    newUid = Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 1000);
+    const existingUser = await User.findOne({ uid: newUid });
+    if (!existingUser) {
+      isUnique = true;
+    }
+  }
+  return newUid;
+};
+
 
 exports.verifyOtp = async (req, res) => {
   try {
     const { phone, otp } = req.body;
 
-    if (!phone) {
-      return res.status(400).json({ success: false, message: "Phone number is required" });
-    }
+    if (!phone) return res.status(400).json({ success: false, message: "Phone number is required" });
 
     let user = await User.findOne({ mobileNo: phone });
 
@@ -24,16 +42,19 @@ exports.verifyOtp = async (req, res) => {
     if (!otp) return res.status(400).json({ success: false, message: "OTP is required" });
     if (otp !== "1234") return res.status(400).json({ success: false, message: "Invalid OTP" });
 
-    if (!user) user = new User({ mobileNo: phone });
+    if (!user) {
+      // ✅ Create user and generate UID
+      const newUid = await generateUniqueUid(); // Generate UID before creating user
+      user = new User({ mobileNo: phone, uid: newUid }); // Assign the generated UID
+    }
 
     user.isVerified = true;
 
-    // Generate a unique secret per user for JWT
     if (!user.token) {
-      const userSecret = crypto.randomBytes(32).toString("hex"); // unique per user
+      const userSecret = crypto.randomBytes(32).toString("hex");
       const token = jwt.sign({ id: user._id }, userSecret, { expiresIn: "7d" });
       user.token = token;
-      user.jwtSecret = userSecret; // save this secret to verify token later
+      user.jwtSecret = userSecret; // Ensure jwtSecret is stored if you plan to verify tokens later
     }
 
     await user.save();
@@ -45,9 +66,14 @@ exports.verifyOtp = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    console.error("Verification error:", error); // Log the full error for debugging
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
   }
 };
+
+
+
+
 
 
 
