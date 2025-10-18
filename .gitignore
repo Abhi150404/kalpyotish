@@ -2,4 +2,5 @@
 kalpjyothis.json
 notification.json
 google-services.json
-
+.env
+./env
