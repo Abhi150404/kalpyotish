@@ -49,7 +49,7 @@ exports.addContact = async (req, res) => {
       body: messageBody,
     });
 
-    // Log Twilio message SID in console
+   
     console.log("✅ WhatsApp message sent! SID:", messageResponse.sid);
 
     res.status(201).json({
