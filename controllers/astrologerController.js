@@ -1,5 +1,6 @@
 const Astrologer = require('../models/Astrologer');
 const NotificationToken = require("../models/NotificationToken");
+const Review = require('../models/Review');
 
 exports.registerAstrologer = async (req, res) => {
   try {
@@ -111,14 +112,47 @@ exports.updateProfilePhoto = async (req, res) => {
 
 exports.getAllAstrologers = async (req, res) => {
   try {
+    // Fetch all astrologers
     const astrologers = await Astrologer.find();
+
+    // For each astrologer, fetch reviews, user info, and average rating
+    const enrichedAstrologers = await Promise.all(
+      astrologers.map(async (astro) => {
+        const reviews = await Review.find({ astrologerId: astro._id })
+          .populate("userId", "name profile")
+          .sort({ createdAt: -1 });
+
+        // Calculate average rating
+        const ratingData = await Review.aggregate([
+          { $match: { astrologerId: astro._id } },
+          {
+            $group: {
+              _id: "$astrologerId",
+              avgRating: { $avg: "$rating" },
+              totalReviews: { $sum: 1 }
+            }
+          }
+        ]);
+
+        const averageRating = ratingData.length ? ratingData[0].avgRating.toFixed(1) : "0.0";
+        const totalReviews = ratingData.length ? ratingData[0].totalReviews : 0;
+
+        return {
+          ...astro.toObject(),
+          reviews,
+          averageRating,
+          totalReviews
+        };
+      })
+    );
+
     res.status(200).json({
-      message: 'Astrologers fetched successfully',
-      data: astrologers
+      message: "Astrologers fetched successfully",
+      data: enrichedAstrologers
     });
   } catch (err) {
-    console.error('Fetching error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("Fetching error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
