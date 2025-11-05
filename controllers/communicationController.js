@@ -93,3 +93,47 @@ exports.updateRequestStatus = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
+
+
+// ✅ Get all communication requests for a specific user
+exports.getRequestsForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Validate user existence
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Fetch all requests by userId
+    const requests = await CommunicationRequest.find({ user: userId })
+      .populate("astrologer", "name email number profile")
+      .sort({ createdAt: -1 });
+
+    // If no history found
+    if (!requests || requests.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No communication history found for this user",
+        data: [],
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User communication history fetched successfully",
+      data: requests,
+    });
+  } catch (err) {
+    console.error("Fetching user communication history error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching user communication history",
+      error: err.message,
+    });
+  }
+};
