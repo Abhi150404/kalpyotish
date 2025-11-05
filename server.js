@@ -58,6 +58,9 @@ const orderRoutes = require('./routes/orderRoutes');
 app.use('/api/orders', orderRoutes);
 const privacyPolicyRoutes = require('./routes/privacyPolicyRoutes');
 app.use('/api', privacyPolicyRoutes);
+const feedbackRoutes = require("./routes/feedbackRoutes");
+app.use("/api/feedback", feedbackRoutes);
+
 
 
 
