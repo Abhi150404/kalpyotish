@@ -18,11 +18,29 @@ exports.createTransit = async (req, res) => {
 exports.getAllTransits = async (req, res) => {
   try {
     const transits = await Transit.find();
-    res.status(200).json({ data: transits });
+
+    if (!transits || transits.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No transit data found",
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Transits fetched successfully",
+      data: transits,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: err.message,
+    });
   }
 };
+
 
 // Read Single
 exports.getTransitById = async (req, res) => {
