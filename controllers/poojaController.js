@@ -38,6 +38,41 @@ exports.getPoojaById = async (req, res) => {
   }
 };
 
+exports.updatePooja = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, category } = req.body;
+
+    // Find the existing pooja
+    const existingPooja = await Pooja.findById(id);
+    if (!existingPooja) {
+      return res.status(404).json({ message: 'Pooja not found' });
+    }
+
+    // Update fields if provided
+    if (name) existingPooja.name = name;
+    if (description) existingPooja.description = description;
+    if (category) existingPooja.category = category;
+
+    // ✅ If a new image is uploaded, replace it
+    if (req.file && req.file.path) {
+      existingPooja.image = req.file.path;
+    }
+
+    // Save updates
+    await existingPooja.save();
+
+    res.status(200).json({
+      message: 'Pooja updated successfully',
+      data: existingPooja,
+    });
+  } catch (error) {
+    console.error('Update Pooja Error:', error);
+    res.status(500).json({ message: 'Failed to update pooja', error: error.message });
+  }
+};
+
+
 exports.deletePooja = async (req, res) => {
   try {
     await Pooja.findByIdAndDelete(req.params.id);
