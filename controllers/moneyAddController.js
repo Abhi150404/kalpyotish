@@ -74,9 +74,21 @@ exports.getMoneyByUser = async (req, res) => {
       return res.status(404).json({ success: false, message: "No records found for this user." });
     }
 
-    res.status(200).json({ success: true, data: records });
+    // Calculate available balance
+    const totalFinalAmount = records.reduce((sum, record) => sum + (record.finalAmount || 0), 0);
+    const debitBalance = 0; // placeholder for future debit transactions
+    const availableBalance = totalFinalAmount - debitBalance;
+
+    res.status(200).json({
+      success: true,
+      availableBalance,
+      debitBalance,
+      totalFinalAmount,
+      data: records
+    });
 
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
