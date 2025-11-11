@@ -21,7 +21,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const langRoutes = require('./routes/languageRoutes.js');
 const clientRoutes = require('./routes/clientRoutes.js');
 const otpRoutes = require("./routes/otpRoutes");
-
+const moneyAddRoutes = require('./routes/moneyAddRoutes.js');
 
 
 const app = express();
@@ -51,6 +51,7 @@ app.use("/api/contact", contactRoutes);
 app.use('/api', langRoutes);
 app.use('/api/user',clientRoutes);
 app.use("/api/otp", otpRoutes);
+app.use('/v1/money',moneyAddRoutes);
 
 
 
