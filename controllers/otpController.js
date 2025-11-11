@@ -1,5 +1,5 @@
-const PhoneAuth = require("../models/PhoneAuth");
-const crypto = require("crypto");
+const PhoneAuth = require('../models/PhoneAuth');
+const UserDetail = require('../models/UserDetail');
 
 exports.verifyOtp = async (req, res) => {
   try {
@@ -12,17 +12,20 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // ✅ Step 1: Check if phone number already exists in DB
+    // ✅ Step 1: Check if phone number already exists in OTP DB
     const existing = await PhoneAuth.findOne({ phone });
 
     if (existing) {
-      // ✅ If already verified before, return existing token
+      // ✅ Find user (if already registered)
+      const existingUser = await UserDetail.findOne({ mobileNo: phone });
+
       return res.status(200).json({
         success: true,
         message: "Phone number already verified",
         data: {
           phone: existing.phone,
           token: existing.token,
+          user: existingUser ? existingUser : null
         },
       });
     }
@@ -50,15 +53,20 @@ exports.verifyOtp = async (req, res) => {
     const newAuth = new PhoneAuth({ phone, token });
     await newAuth.save();
 
-    // ✅ Step 5: Respond
+    // ✅ Step 5: Check if user already exists (after first verification)
+    const user = await UserDetail.findOne({ mobileNo: phone });
+
+    // ✅ Step 6: Response
     return res.status(200).json({
       success: true,
       message: "OTP verified successfully",
       data: {
         phone,
         token,
+        user: user ? user : null
       },
     });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({
