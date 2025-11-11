@@ -112,49 +112,97 @@ exports.updateProfilePhoto = async (req, res) => {
 
 exports.getAllAstrologers = async (req, res) => {
   try {
-    // Fetch all astrologers
-    const astrologers = await Astrologer.find();
+    // Extract query params
+    const { name, experience, skills, pageStart = 1, pageEnd = 10 } = req.query;
 
-    // For each astrologer, fetch reviews, user info, and average rating
+    // Build dynamic filters
+    const filter = {};
+
+    if (name) {
+      filter.name = { $regex: name, $options: "i" }; // case-insensitive search
+    }
+
+    if (experience) {
+      // You can pass a single number or a range like "2-5"
+      if (experience.includes('-')) {
+        const [min, max] = experience.split('-').map(Number);
+        filter.experience = { $gte: min, $lte: max };
+      } else {
+        filter.experience = Number(experience);
+      }
+    }
+
+    if (skills) {
+      // Skills can be comma-separated string or single value
+      const skillArray = Array.isArray(skills)
+        ? skills
+        : skills.split(',').map((s) => s.trim());
+      filter.skills = { $in: skillArray };
+    }
+
+    // Pagination
+    const page = parseInt(pageStart) || 1;
+    const limit = parseInt(pageEnd) || 10;
+    const skip = (page - 1) * limit;
+
+    // Fetch astrologers with filters + pagination
+    const astrologers = await Astrologer.find(filter)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const totalCount = await Astrologer.countDocuments(filter);
+
+    // Enrich astrologers with reviews and average rating
     const enrichedAstrologers = await Promise.all(
       astrologers.map(async (astro) => {
         const reviews = await Review.find({ astrologerId: astro._id })
           .populate("userId", "name profile")
           .sort({ createdAt: -1 });
 
-        // Calculate average rating
         const ratingData = await Review.aggregate([
           { $match: { astrologerId: astro._id } },
           {
             $group: {
               _id: "$astrologerId",
               avgRating: { $avg: "$rating" },
-              totalReviews: { $sum: 1 }
-            }
-          }
+              totalReviews: { $sum: 1 },
+            },
+          },
         ]);
 
-        const averageRating = ratingData.length ? ratingData[0].avgRating.toFixed(1) : "0.0";
-        const totalReviews = ratingData.length ? ratingData[0].totalReviews : 0;
+        const averageRating = ratingData.length
+          ? ratingData[0].avgRating.toFixed(1)
+          : "0.0";
+        const totalReviews = ratingData.length
+          ? ratingData[0].totalReviews
+          : 0;
 
         return {
           ...astro.toObject(),
           reviews,
           averageRating,
-          totalReviews
+          totalReviews,
         };
       })
     );
 
+    // Final response
     res.status(200).json({
+      success: true,
       message: "Astrologers fetched successfully",
-      data: enrichedAstrologers
+      currentPage: page,
+      perPage: limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      data: enrichedAstrologers,
     });
   } catch (err) {
     console.error("Fetching error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
+
 
 exports.getAstrologerStats = async (req, res) => {
   try {
