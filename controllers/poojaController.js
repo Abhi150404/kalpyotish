@@ -2,31 +2,61 @@
 
 exports.createPooja = async (req, res) => {
   try {
-    const { name, description, category } = req.body;
-    const image = req.file.path;
-    const newPooja = new Pooja({ name, description, category, image });
+    const { name, description, price } = req.body;
+    const image = req.file ? req.file.path : null;
+
+    // Validation
+    if (!name || !price) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and price are required",
+      });
+    }
+
+    const newPooja = new Pooja({
+      name,
+      description,
+      price,
+      image,
+    });
+
     await newPooja.save();
-    res.status(201).json({ message: 'Pooja created successfully', data: newPooja });
+
+    res.status(201).json({
+      success: true,
+      message: "Pooja created successfully",
+      data: newPooja,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create pooja', error });
+    res.status(500).json({
+      success: false,
+      message: "Failed to create pooja",
+      error: error.message,
+    });
   }
 };
+
 
 exports.getAllPoojas = async (req, res) => {
   try {
     const poojas = await Pooja.find();
-    const categorized = {};
-    poojas.forEach((pooja) => {
-      if (!categorized[pooja.category]) {
-        categorized[pooja.category] = [];
-      }
-      categorized[pooja.category].push(pooja);
+
+    res.status(200).json({
+      success: true,
+      message: "Poojas fetched successfully",
+      data: poojas,
     });
-    res.status(200).json({ message: 'Poojas fetched', data: categorized });
+
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch poojas', error });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch poojas",
+      error: error.message,
+    });
   }
 };
+
 
 exports.getPoojaById = async (req, res) => {
   try {
