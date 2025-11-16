@@ -13,9 +13,14 @@ exports.createPooja = async (req, res) => {
       });
     }
 
+    // Convert "\n" to real line breaks
+    const formattedDescription = description
+      ? description.replace(/\\n/g, "\n")
+      : "";
+
     const newPooja = new Pooja({
       name,
-      description,
+      description: formattedDescription,
       price,
       image,
     });
@@ -36,6 +41,7 @@ exports.createPooja = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getAllPoojas = async (req, res) => {
@@ -71,36 +77,51 @@ exports.getPoojaById = async (req, res) => {
 exports.updatePooja = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, category } = req.body;
+    const { name, description, price } = req.body;
 
-    // Find the existing pooja
-    const existingPooja = await Pooja.findById(id);
-    if (!existingPooja) {
-      return res.status(404).json({ message: 'Pooja not found' });
+    // Convert "\\n" into actual line breaks
+    const formattedDescription = description
+      ? description.replace(/\\n/g, "\n")
+      : undefined;
+
+    const updateData = {};
+
+    if (name) updateData.name = name;
+    if (price) updateData.price = price;
+    if (formattedDescription !== undefined)
+      updateData.description = formattedDescription;
+
+    // If a new image is uploaded, update it
+    if (req.file) {
+      updateData.image = req.file.path;
     }
 
-    // Update fields if provided
-    if (name) existingPooja.name = name;
-    if (description) existingPooja.description = description;
-    if (category) existingPooja.category = category;
+    const updatedPooja = await Pooja.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
-    // ✅ If a new image is uploaded, replace it
-    if (req.file && req.file.path) {
-      existingPooja.image = req.file.path;
+    if (!updatedPooja) {
+      return res.status(404).json({
+        success: false,
+        message: "Pooja not found",
+      });
     }
-
-    // Save updates
-    await existingPooja.save();
 
     res.status(200).json({
-      message: 'Pooja updated successfully',
-      data: existingPooja,
+      success: true,
+      message: "Pooja updated successfully",
+      data: updatedPooja,
     });
+
   } catch (error) {
-    console.error('Update Pooja Error:', error);
-    res.status(500).json({ message: 'Failed to update pooja', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update pooja",
+      error: error.message,
+    });
   }
 };
+
 
 
 exports.deletePooja = async (req, res) => {
