@@ -112,18 +112,15 @@ exports.updateProfilePhoto = async (req, res) => {
 
 exports.getAllAstrologers = async (req, res) => {
   try {
-    // Extract query params
     const { name, experience, skills, pageStart = 1, pageEnd = 10 } = req.query;
 
-    // Build dynamic filters
     const filter = {};
 
     if (name) {
-      filter.name = { $regex: name, $options: "i" }; // case-insensitive search
+      filter.name = { $regex: name, $options: "i" };
     }
 
     if (experience) {
-      // You can pass a single number or a range like "2-5"
       if (experience.includes('-')) {
         const [min, max] = experience.split('-').map(Number);
         filter.experience = { $gte: min, $lte: max };
@@ -133,19 +130,16 @@ exports.getAllAstrologers = async (req, res) => {
     }
 
     if (skills) {
-      // Skills can be comma-separated string or single value
       const skillArray = Array.isArray(skills)
         ? skills
         : skills.split(',').map((s) => s.trim());
       filter.skills = { $in: skillArray };
     }
 
-    // Pagination
     const page = parseInt(pageStart) || 1;
     const limit = parseInt(pageEnd) || 10;
     const skip = (page - 1) * limit;
 
-    // Fetch astrologers with filters + pagination
     const astrologers = await Astrologer.find(filter)
       .skip(skip)
       .limit(limit)
@@ -153,7 +147,6 @@ exports.getAllAstrologers = async (req, res) => {
 
     const totalCount = await Astrologer.countDocuments(filter);
 
-    // Enrich astrologers with reviews and average rating
     const enrichedAstrologers = await Promise.all(
       astrologers.map(async (astro) => {
         const reviews = await Review.find({ astrologerId: astro._id })
@@ -174,20 +167,23 @@ exports.getAllAstrologers = async (req, res) => {
         const averageRating = ratingData.length
           ? ratingData[0].avgRating.toFixed(1)
           : "0.0";
+
         const totalReviews = ratingData.length
           ? ratingData[0].totalReviews
           : 0;
 
+        // 🔥 Added callType + availabilityStatus
         return {
           ...astro.toObject(),
           reviews,
           averageRating,
           totalReviews,
+          callType: ["voice", "videocall", "chat"],
+          availabilityStatus: astro.status === "live" ? "online" : "offline",
         };
       })
     );
 
-    // Final response
     res.status(200).json({
       success: true,
       message: "Astrologers fetched successfully",
@@ -199,9 +195,14 @@ exports.getAllAstrologers = async (req, res) => {
     });
   } catch (err) {
     console.error("Fetching error:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
+
 
 
 exports.getAstrologerStats = async (req, res) => {
