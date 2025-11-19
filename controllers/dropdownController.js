@@ -14,7 +14,7 @@ exports.getDropdownOptions = async (req, res) => {
 
     res.status(200).json({
       sucess:true,
-      message: 'Dropdown options fetched successfully',
+      message: 'Astrologers skills fetched successfully',
       data: grouped
     });
   } catch (err) {
