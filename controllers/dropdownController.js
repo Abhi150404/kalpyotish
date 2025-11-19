@@ -13,6 +13,7 @@ exports.getDropdownOptions = async (req, res) => {
     }, {});
 
     res.status(200).json({
+      sucess:true,
       message: 'Dropdown options fetched successfully',
       data: grouped
     });
