@@ -51,7 +51,7 @@ app.use("/api/contact", contactRoutes);
 app.use('/api', langRoutes);
 app.use('/api/user',clientRoutes);
 app.use("/api/otp", otpRoutes);
-app.use('/v1/money',moneyAddRoutes);
+app.use('/api/money',moneyAddRoutes);
 
 
 
@@ -108,6 +108,7 @@ const descriptions = [
   "You may discover a hidden talent today.",
   "Challenges will shape your character.",
   "Small steps will lead to major progress.",
+
   "Be bold – your courage will be rewarded.",
   "An emotional breakthrough is on the horizon.",
   "You’re more resilient than you think.",
@@ -237,7 +238,4 @@ app.listen(PORT, () => {
 });
 
 
-//port run env
-app.listen(PORT, () => {
-  console.log(`🚀 Server is listening on port ${PORT}`);
-});
+
