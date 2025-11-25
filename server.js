@@ -22,6 +22,8 @@ const langRoutes = require('./routes/languageRoutes.js');
 const clientRoutes = require('./routes/clientRoutes.js');
 const otpRoutes = require("./routes/otpRoutes");
 const moneyAddRoutes = require('./routes/moneyAddRoutes.js');
+const astroRoutes = require("./routes/astroFormRoutes");
+
 
 
 const app = express();
@@ -52,7 +54,7 @@ app.use('/api', langRoutes);
 app.use('/api/user',clientRoutes);
 app.use("/api/otp", otpRoutes);
 app.use('/api/money',moneyAddRoutes);
-
+app.use("/api/astro-form", astroRoutes);
 
 
 const orderRoutes = require('./routes/orderRoutes');
