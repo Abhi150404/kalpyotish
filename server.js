@@ -23,6 +23,7 @@ const clientRoutes = require('./routes/clientRoutes.js');
 const otpRoutes = require("./routes/otpRoutes");
 const moneyAddRoutes = require('./routes/moneyAddRoutes.js');
 const astroRoutes = require("./routes/astroFormRoutes");
+const astrologerRoutes_2 = require("./routes/astrologerRoutes_2");
 
 
 
@@ -55,6 +56,7 @@ app.use('/api/user',clientRoutes);
 app.use("/api/otp", otpRoutes);
 app.use('/api/money',moneyAddRoutes);
 app.use("/api/astro-form", astroRoutes);
+app.use("/api/astrologers-new", astrologerRoutes_2);
 
 
 const orderRoutes = require('./routes/orderRoutes');
@@ -240,7 +242,3 @@ app.listen(PORT, () => {
 });
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 53b89db3a09beaa57bfcc6d574e51b8ca135a722

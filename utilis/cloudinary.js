@@ -1,24 +1,34 @@
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
 cloudinary.config({
-  cloud_name: 'dvumlrxml',
-  api_key: '437932967899129',
-  api_secret: 'Pg4zI1EW8iCdotG29P4jcHFAW4s',
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Storage
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: 'astrologers_profiles',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    public_id: (req, file) => `profile_${Date.now()}_${file.originalname.split('.')[0]}`,
-  },
+  params: (req, file) => ({
+    folder: "astrologers",
+    allowed_formats: ["jpg", "jpeg", "png", "pdf"],
+    public_id: `file_${Date.now()}_${file.originalname.split(".")[0]}`
+  })
 });
 
 const upload = multer({ storage });
 
-// ✅ Export as object so it can be destructured
-module.exports = { upload };
+// MULTIPLE FILES FOR ASTROLOGER
+const astrologerUploads = upload.fields([
+  { name: "profilePhoto", maxCount: 1 },
+  { name: "bankDocument", maxCount: 1 },
+  { name: "adharCard", maxCount: 1 },
+  { name: "panCard", maxCount: 1 }
+]);
 
+module.exports = {
+  upload,
+  astrologerUploads
+};
