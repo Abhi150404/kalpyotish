@@ -110,6 +110,7 @@ const descriptions = [
   "You may discover a hidden talent today.",
   "Challenges will shape your character.",
   "Small steps will lead to major progress.",
+
   "Be bold – your courage will be rewarded.",
   "An emotional breakthrough is on the horizon.",
   "You’re more resilient than you think.",
@@ -239,3 +240,7 @@ app.listen(PORT, () => {
 });
 
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 53b89db3a09beaa57bfcc6d574e51b8ca135a722
