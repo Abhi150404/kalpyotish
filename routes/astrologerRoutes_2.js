@@ -13,6 +13,7 @@ const { astrologerUploads } = require('../utilis/cloudinary');
 // CREATE (Registration)
 router.post("/register", astrologerUploads, createAstrologer);
 
+
 // READ
 router.get("/all", getAllAstrologers);
 router.get("/single/:id", getAstrologer);

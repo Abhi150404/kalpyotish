@@ -18,10 +18,23 @@ exports.createAstrologer = async (req, res) => {
       email, experience, availability
     } = req.body;
 
-    const profilePhoto = req.files?.profilePhoto?.[0]?.path;
-    const bankDocument = req.files?.bankDocument?.[0]?.path;
-    const adharCard = req.files?.adharCard?.[0]?.path;
-    const panCard = req.files?.panCard?.[0]?.path;
+    const files = req.files || [];
+
+    const profilePhoto = files.find(f =>
+      f.originalname.toLowerCase().includes("profile")
+    )?.path;
+
+    const bankDocument = files.find(f =>
+      f.originalname.toLowerCase().includes("bank")
+    )?.path;
+
+    const adharCard = files.find(f =>
+      f.originalname.toLowerCase().includes("adhar")
+    )?.path;
+
+    const panCard = files.find(f =>
+      f.originalname.toLowerCase().includes("pan")
+    )?.path;
 
     const eid = generateEID();
     const password = generatePassword();
@@ -42,7 +55,7 @@ exports.createAstrologer = async (req, res) => {
       alternativeNumber,
       email,
       experience,
-      availability: JSON.parse(availability), // coming as string
+      availability: availability ? JSON.parse(availability) : {},
       profilePhoto,
       bankDocument,
       adharCard,
@@ -52,8 +65,8 @@ exports.createAstrologer = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Astrologer registered successfully",
-      eid: eid,
-      password: password,
+      eid,
+      password,
       data: newAstrologer
     });
 
@@ -61,6 +74,7 @@ exports.createAstrologer = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 exports.getAllAstrologers = async (req, res) => {

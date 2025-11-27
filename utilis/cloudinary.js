@@ -21,12 +21,8 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // MULTIPLE FILES FOR ASTROLOGER
-const astrologerUploads = upload.fields([
-  { name: "profilePhoto", maxCount: 1 },
-  { name: "bankDocument", maxCount: 1 },
-  { name: "adharCard", maxCount: 1 },
-  { name: "panCard", maxCount: 1 }
-]);
+const astrologerUploads = upload.array("files", 10); // allow up to 10 files
+
 
 module.exports = {
   upload,
