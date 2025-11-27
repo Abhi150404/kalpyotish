@@ -4,14 +4,23 @@ const router = express.Router();
 const {
   createAstrologer,
   getAllAstrologers,
-  getAstrologer,
   updateAstrologer,
-  deleteAstrologer
+  deleteAstrologer,
+  getAstrologer,
+  // other handlers...
 } = require("../controllers/astrologerController_2");
 
-const { astrologerUploads } = require('../utilis/cloudinary');
-// CREATE (Registration)
-router.post("/register", astrologerUploads, createAstrologer);
+const { astrologerUploads } = require("../utilis/cloudinary");
+
+// Debug middleware (optional) logs body & files
+const debugUploads = (req, res, next) => {
+  console.log("=== incoming upload ===");
+  console.log("body:", req.body);
+  console.log("files:", (req.files || []).map(f => ({ fieldname: f.fieldname, originalname: f.originalname })));
+  next();
+};
+
+router.post("/register", astrologerUploads, debugUploads, createAstrologer);
 
 
 // READ

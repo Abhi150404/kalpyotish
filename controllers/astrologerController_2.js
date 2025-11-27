@@ -1,17 +1,16 @@
-// Generate EID: KALP + 4 Digit Random
-const generateEID = () => {
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `KALP${num}`;
-};
-
-// Generate 12 Digit Password
-const generatePassword = () => {
-  return Math.random().toString().slice(2, 14); // 12 digits
-};
+// controllers/astrologerController.js
 const Astrologer = require("../models/AstrologerModel");
+
+// helpers (your generateEID/generatePassword)
+const generateEID = () => `KALP${Math.floor(1000 + Math.random() * 9000)}`;
+const generatePassword = () => Math.random().toString().slice(2, 14);
 
 exports.createAstrologer = async (req, res) => {
   try {
+    // debug - you can remove after testing
+    console.log("BODY =>", req.body);
+    console.log("FILES =>", req.files?.map(f => ({ fieldname: f.fieldname, originalname: f.originalname, path: f.path || f.secure_url || f.url })) );
+
     const {
       name, age, gender, state, district, city, address,
       speciality, salary, phoneNumber, alternativeNumber,
@@ -20,21 +19,46 @@ exports.createAstrologer = async (req, res) => {
 
     const files = req.files || [];
 
-    const profilePhoto = files.find(f =>
-      f.originalname.toLowerCase().includes("profile")
-    )?.path;
+    // Helper to get URL from uploaded file (multer-storage-cloudinary gives `path`)
+    const getUrl = (file) => file?.path || file?.secure_url || file?.url || null;
 
-    const bankDocument = files.find(f =>
-      f.originalname.toLowerCase().includes("bank")
-    )?.path;
+    // Strategy:
+    // 1) check file.fieldname (if client used 'files' it's 'files')
+    // 2) if not, fall back to originalname containing keywords
+    const findByName = (keywords = []) => {
+      const kw = keywords.map(k => k.toLowerCase());
+      return files.find(f => {
+        // check fieldname first
+        if (f.fieldname && kw.includes(f.fieldname.toLowerCase())) return true;
+        // check originalname for keywords
+        const on = (f.originalname || "").toLowerCase();
+        return kw.some(k => on.includes(k));
+      });
+    };
 
-    const adharCard = files.find(f =>
-      f.originalname.toLowerCase().includes("adhar")
-    )?.path;
+    const profileFile = findByName(["profile", "profilephoto", "profilePhoto".toLowerCase()]);
+    const adharFile = findByName(["adhar", "aadhar", "adharcard", "aadharcard"]);
+    const panFile = findByName(["pan", "pancard", "pan_card"]);
+    const bankFile = findByName(["bank", "bankdocument", "bank_doc", "bank_document"]);
 
-    const panCard = files.find(f =>
-      f.originalname.toLowerCase().includes("pan")
-    )?.path;
+    const profilePhoto = getUrl(profileFile);
+    const adharCard = getUrl(adharFile);
+    const panCard = getUrl(panFile);
+    const bankDocument = getUrl(bankFile);
+
+    // Safe parse availability
+    let parsedAvailability = {};
+    if (availability) {
+      if (typeof availability === "string") {
+        try {
+          parsedAvailability = JSON.parse(availability);
+        } catch (err) {
+          return res.status(400).json({ success: false, message: "Invalid availability JSON" });
+        }
+      } else if (typeof availability === "object") {
+        parsedAvailability = availability;
+      }
+    }
 
     const eid = generateEID();
     const password = generatePassword();
@@ -55,25 +79,26 @@ exports.createAstrologer = async (req, res) => {
       alternativeNumber,
       email,
       experience,
-      availability: availability ? JSON.parse(availability) : {},
+      availability: parsedAvailability,
       profilePhoto,
       bankDocument,
       adharCard,
       panCard
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Astrologer registered successfully",
       eid,
       password,
       data: newAstrologer
     });
-
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("createAstrologer error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 

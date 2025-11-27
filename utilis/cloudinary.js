@@ -1,3 +1,4 @@
+// utilis/cloudinary.js
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
@@ -8,7 +9,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Storage
+// Cloudinary storage
 const storage = new CloudinaryStorage({
   cloudinary,
   params: (req, file) => ({
@@ -18,11 +19,10 @@ const storage = new CloudinaryStorage({
   })
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
 
-// MULTIPLE FILES FOR ASTROLOGER
-const astrologerUploads = upload.array("files", 10); // allow up to 10 files
-
+// Accept any files (prevents Unexpected field). We'll map later.
+const astrologerUploads = upload.any();
 
 module.exports = {
   upload,
