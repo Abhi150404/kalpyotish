@@ -24,6 +24,7 @@ const otpRoutes = require("./routes/otpRoutes");
 const moneyAddRoutes = require('./routes/moneyAddRoutes.js');
 const astroRoutes = require("./routes/astroFormRoutes");
 const astrologerRoutes_2 = require("./routes/astrologerRoutes_2");
+const astroroutes = require("./routes/astroRoutes");
 
 
 
@@ -57,6 +58,7 @@ app.use("/api/otp", otpRoutes);
 app.use('/api/money',moneyAddRoutes);
 app.use("/api/astro-form", astroRoutes);
 app.use("/api/astrologers-new", astrologerRoutes_2);
+app.use("/api/astro",astroroutes);
 
 
 const orderRoutes = require('./routes/orderRoutes');
