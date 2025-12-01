@@ -5,7 +5,8 @@ const astroSchema = new mongoose.Schema(
     name: String,
     eid: String,
     password: String,
-
+    isSystemGeneratedPassword: { type: Boolean, default: true },
+    loginToken: String,
     age: Number,
     gender: String,
     state: String,

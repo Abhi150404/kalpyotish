@@ -6,7 +6,10 @@ const {
   getAllAstrologers,
   getAstrologer,
   updateAstrologer,
-  deleteAstrologer
+  deleteAstrologer,
+  loginAstro,
+  sendResetOtp,
+  verifyOtpAndResetPassword
 } = require("../controllers/astroController");
 
 const { astrologerUploads } = require("../utilis/cloudinary");
@@ -25,5 +28,10 @@ router.put("/update/:id", astrologerUploads, updateAstrologer);
 
 // DELETE
 router.delete("/delete/:id", deleteAstrologer);
+
+router.post("/login", loginAstro);
+router.post("/reset/send-otp", sendResetOtp);
+router.post("/reset/verify", verifyOtpAndResetPassword);
+
 
 module.exports = router;
