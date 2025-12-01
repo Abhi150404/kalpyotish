@@ -3,6 +3,9 @@ const mongoose = require("mongoose");
 const astroSchema = new mongoose.Schema(
   {
     name: String,
+    eid: String,
+    password: String,
+
     age: Number,
     gender: String,
     state: String,
