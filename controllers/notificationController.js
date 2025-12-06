@@ -111,3 +111,66 @@ exports.getNotifications = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+const User = require("../models/UserDetail"); 
+const admin = require("../config/fcm"); 
+
+exports.sendNotification = async (req, res) => {
+  try {
+    const { name, profilePic, id, type, channelName } = req.body;
+
+    if (!name || !profilePic || !id || !type || !channelName) {
+      return res.status(400).json({ message: "All fields required." });
+    }
+
+    let tokens = [];
+
+    // 🔹 If type = voice or video → target single user only
+    if (type === "voice" || type === "video") {
+      const user = await User.findById(id);
+      if (!user || !user.fcmToken) {
+        return res.status(404).json({ message: "User token not found" });
+      }
+      tokens.push(user.fcmToken);
+    }
+
+    // 🔹 If type = stream → send to all users
+    if (type === "stream") {
+      const users = await User.find({ fcmToken: { $exists: true } }).select("fcmToken");
+      tokens = users.map(u => u.fcmToken);
+    }
+
+    if (tokens.length === 0) {
+      return res.status(400).json({ message: "No tokens found" });
+    }
+
+    // 🔥 Notification payload
+    const message = {
+      notification: {
+        title: `${name} started a ${type} call`,
+        body: `Channel: ${channelName}`
+      },
+      data: {
+        name,
+        profilePic,
+        id,
+        type,
+        channelName
+      },
+      tokens
+    };
+
+    // Send Multicast Notification
+    const response = await admin.messaging().sendMulticast(message);
+
+    return res.status(200).json({
+      success: true,
+      message: "Notification sent",
+      response
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal error", error });
+  }
+};

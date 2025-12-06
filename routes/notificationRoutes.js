@@ -1,5 +1,5 @@
 const express = require("express");
-const { saveFcmToken, updateFcmToken,  createNotification,
+const { saveFcmToken, updateFcmToken,  createNotification,sendNotification,
   getNotifications, } = require("../controllers/notificationController");
 
 const router = express.Router();
@@ -14,5 +14,7 @@ router.post("/create", createNotification);
 
 // Fetch all or by user/astrologer id
 router.get("/list", getNotifications);
+
+router.post("/send-notification", sendNotification);
 
 module.exports = router;
