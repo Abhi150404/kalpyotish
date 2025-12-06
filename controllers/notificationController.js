@@ -112,39 +112,67 @@ exports.getNotifications = async (req, res) => {
   }
 };
 
-const User = require("../models/UserDetail"); 
-const admin = require("../config/fcm"); 
+
+const User = require("../models/UserDetail");
+const Astro = require("../models/astroModel");
+const admin = require("../config/fcm");
 
 exports.sendNotification = async (req, res) => {
   try {
     const { name, profilePic, id, type, channelName } = req.body;
 
     if (!name || !profilePic || !id || !type || !channelName) {
-      return res.status(400).json({ message: "All fields required." });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     let tokens = [];
 
-    // 🔹 If type = voice or video → target single user only
+    /* ----------------------------------------------
+       1️⃣ If type = voice/video → send to ONLY one ID
+       ---------------------------------------------- */
     if (type === "voice" || type === "video") {
-      const user = await User.findById(id);
-      if (!user || !user.fcmToken) {
-        return res.status(404).json({ message: "User token not found" });
+      // First check if ID belongs to User
+      let user = await User.findById(id).select("fcmToken");
+
+      if (user && user.fcmToken) {
+        tokens.push(user.fcmToken);
+      } else {
+        // If not user → check astrologer
+        let astro = await Astro.findById(id).select("fcmToken");
+
+        if (astro && astro.fcmToken) {
+          tokens.push(astro.fcmToken);
+        } else {
+          return res.status(404).json({ message: "FCM token not found for this ID" });
+        }
       }
-      tokens.push(user.fcmToken);
     }
 
-    // 🔹 If type = stream → send to all users
+    /* ----------------------------------------------
+       2️⃣ If type = stream → send to all
+       ---------------------------------------------- */
     if (type === "stream") {
-      const users = await User.find({ fcmToken: { $exists: true } }).select("fcmToken");
-      tokens = users.map(u => u.fcmToken);
+      const users = await User.find({
+        fcmToken: { $exists: true, $ne: null }
+      }).select("fcmToken");
+
+      const astros = await Astro.find({
+        fcmToken: { $exists: true, $ne: null }
+      }).select("fcmToken");
+
+      tokens = [
+        ...users.map(u => u.fcmToken),
+        ...astros.map(a => a.fcmToken)
+      ];
     }
 
     if (tokens.length === 0) {
-      return res.status(400).json({ message: "No tokens found" });
+      return res.status(400).json({ message: "No FCM tokens found" });
     }
 
-    // 🔥 Notification payload
+    /* ----------------------------------------------
+       3️⃣ Notification Payload
+       ---------------------------------------------- */
     const message = {
       notification: {
         title: `${name} started a ${type} call`,
@@ -160,17 +188,17 @@ exports.sendNotification = async (req, res) => {
       tokens
     };
 
-    // Send Multicast Notification
-    const response = await admin.messaging().sendMulticast(message);
+    // Firebase Admin SDK v12+ uses sendEachForMulticast()
+    const response = await admin.messaging().sendEachForMulticast(message);
 
     return res.status(200).json({
       success: true,
-      message: "Notification sent",
+      message: "Notification sent successfully",
       response
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Notification Error:", error);
     res.status(500).json({ message: "Internal error", error });
   }
 };
