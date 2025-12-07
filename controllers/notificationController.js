@@ -10,7 +10,7 @@ exports.saveFcmToken = async (req, res) => {
       return res.status(400).json({ message: "userId, userType and fcmToken are required" });
     }
 
-    if (!["UserDetail", "Astrologer"].includes(userType)) {
+    if (!["UserDetail", "astroModel"].includes(userType)) {
       return res.status(400).json({ message: "Invalid userType" });
     }
 
