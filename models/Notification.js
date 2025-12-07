@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ["UserDetail", "Astrologer"], // who received notification
+      enum: ["UserDetail", "Astrologer"],
       required: true,
     },
     title: {
@@ -18,6 +18,10 @@ const notificationSchema = new mongoose.Schema(
     },
     body: {
       type: String,
+      required: true,
+    },
+    fcmToken: {
+      type: String,   // <-- added token here
       required: true,
     },
     isRead: {

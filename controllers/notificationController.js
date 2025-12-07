@@ -126,39 +126,33 @@ exports.sendNotification = async (req, res) => {
     }
 
     let tokens = [];
+    let receiver = null;
+    let fcmToken = null;
 
-    /* ----------------------------------------------
-       1️⃣ If type = voice/video → send to ONLY one ID
-       ---------------------------------------------- */
+    // Voice / Video: only 1 ID
     if (type === "voice" || type === "video") {
-      // First check if ID belongs to User
-      let user = await User.findById(id).select("fcmToken");
+      let user = await User.findById(id).select("fcmToken name");
 
       if (user && user.fcmToken) {
+        fcmToken = user.fcmToken;
         tokens.push(user.fcmToken);
+        receiver = { userId: user._id, userType: "UserDetail" };
       } else {
-        // If not user → check astrologer
-        let astro = await Astro.findById(id).select("fcmToken");
-
+        let astro = await Astro.findById(id).select("fcmToken name");
         if (astro && astro.fcmToken) {
+          fcmToken = astro.fcmToken;
           tokens.push(astro.fcmToken);
+          receiver = { userId: astro._id, userType: "Astrologer" };
         } else {
           return res.status(404).json({ message: "FCM token not found for this ID" });
         }
       }
     }
 
-    /* ----------------------------------------------
-       2️⃣ If type = stream → send to all
-       ---------------------------------------------- */
+    // Stream → send to all
     if (type === "stream") {
-      const users = await User.find({
-        fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken");
-
-      const astros = await Astro.find({
-        fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken");
+      const users = await User.find({ fcmToken: { $exists: true, $ne: null } }).select("fcmToken");
+      const astros = await Astro.find({ fcmToken: { $exists: true, $ne: null } }).select("fcmToken");
 
       tokens = [
         ...users.map(u => u.fcmToken),
@@ -170,9 +164,6 @@ exports.sendNotification = async (req, res) => {
       return res.status(400).json({ message: "No FCM tokens found" });
     }
 
-    /* ----------------------------------------------
-       3️⃣ Notification Payload
-       ---------------------------------------------- */
     const message = {
       notification: {
         title: `${name} started a ${type} call`,
@@ -183,17 +174,29 @@ exports.sendNotification = async (req, res) => {
         profilePic,
         id,
         type,
-        channelName
+        channelName,
+        fcmToken   // <-- token now included in payload
       },
       tokens
     };
 
-    // Firebase Admin SDK v12+ uses sendEachForMulticast()
+    // Send notification
     const response = await admin.messaging().sendEachForMulticast(message);
+
+    // Save notification ONLY for single receiver (voice/video)
+    if (receiver) {
+      await Notification.create({
+        userId: receiver.userId,
+        userType: receiver.userType,
+        title: `${name} started a ${type} call`,
+        body: `Channel: ${channelName}`,
+        fcmToken,   // <-- save token
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: "Notification sent successfully",
+      message: "Notification sent & saved",
       response
     });
 
@@ -202,3 +205,4 @@ exports.sendNotification = async (req, res) => {
     res.status(500).json({ message: "Internal error", error });
   }
 };
+
