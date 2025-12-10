@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ["UserDetail", "Astrologer"],
+      enum: ["UserDetail", "astroModel"],
       required: true,
     },
     title: {

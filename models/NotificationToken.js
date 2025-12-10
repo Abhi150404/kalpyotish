@@ -9,7 +9,7 @@ const notificationTokenSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ["UserDetail", "Astrologer"], // table names
+      enum: ["UserDetail", "astroModel"], // table names
       required: true,
     },
     fcmToken: {
