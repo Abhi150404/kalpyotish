@@ -121,62 +121,48 @@ const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
-    // 1. Destructure the new payload structure
+    // 1. Destructure payload
     const { name, profilePic, id, type, channelName, fcmToken } = req.body;
 
+    // Validate required fields
     if (!name || !profilePic || !id || !type || !channelName) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     let tokens = [];
-    let receiverId = null; // To store ID for DB logging
-
+    
     // --------------------------------------------------------
-    // 1️⃣ VOICE / VIDEO → USE TOKEN FROM REQUEST BODY
+    // 1️⃣ VOICE / VIDEO → USE TOKEN FROM BODY
     // --------------------------------------------------------
     if (type === "voice" || type === "video") {
       if (!fcmToken) {
         return res.status(400).json({ success: false, message: "fcmToken is required for voice/video" });
       }
-      
-      // Add the specific token sent from client
       tokens.push(fcmToken);
-      
-      // We keep the ID for the DB log history
-      receiverId = id; 
     }
 
     // --------------------------------------------------------
-    // 2️⃣ STREAM → SEND TO FOLLOWERS (DB LOOKUP)
+    // 2️⃣ STREAM → FETCH FOLLOWERS (Keep this if you still use stream)
     // --------------------------------------------------------
     if (type === "stream") {
       const astro = await Astro.findById(id).select("followers");
-      if (!astro) {
-        return res.status(404).json({ success: false, message: "Astrologer not found" });
+      if (astro && astro.followers) {
+        const tokenDocs = await NotificationToken.find({
+          userId: { $in: astro.followers },
+          fcmToken: { $exists: true, $ne: null }
+        }).select("fcmToken");
+        
+        tokens = tokenDocs.map(t => t.fcmToken);
       }
-
-      const followerIds = astro.followers || [];
-
-      // Find all tokens for these followers
-      const tokenDocs = await NotificationToken.find({
-        userId: { $in: followerIds },
-        fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken");
-
-      tokens = tokenDocs.map(t => t.fcmToken);
-      
-      // If the sender passed their own token in body, ensure we don't send to self
-      // (Optional logic: tokens = tokens.filter(t => t !== fcmToken));
     }
 
     if (tokens.length === 0) {
-      return res.status(400).json({ success: false, message: "No FCM tokens found to send to." });
+      return res.status(400).json({ success: false, message: "No FCM tokens found" });
     }
 
     // --------------------------------------------------------
-    // FCM MESSAGE (DATA ONLY - NO TITLE/BODY)
+    // FCM MESSAGE (DATA ONLY)
     // --------------------------------------------------------
-    // Note: All values in 'data' must be strings.
     const message = {
       tokens: tokens,
       data: {
@@ -185,54 +171,25 @@ exports.sendNotification = async (req, res) => {
         id: String(id),
         type: String(type),
         channelName: String(channelName)
-        // You can add "click_action": "FLUTTER_NOTIFICATION_CLICK" if using Flutter
       },
-      // Android specific priority to ensure data messages arrive immediately
-      android: {
-        priority: "high",
-      },
-      // Apple specific (needed for background data messages)
-      apns: {
-        payload: {
-          aps: {
-            "content-available": 1 
-          }
-        }
-      }
+      android: { priority: "high" },
+      apns: { payload: { aps: { "content-available": 1 } } }
     };
 
+    // Send Notification
     const result = await admin.messaging().sendEachForMulticast(message);
 
     // --------------------------------------------------------
-    // CLEANUP INVALID TOKENS (Crucial for Stream)
+    // SAVE DB NOTIFICATION (WITHOUT userType)
     // --------------------------------------------------------
-    if (type === "stream" && result.failureCount > 0) {
-      const failedTokens = [];
-      result.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          const errCode = resp.error.code;
-          if (errCode === 'messaging/invalid-argument' || errCode === 'messaging/registration-token-not-registered') {
-            failedTokens.push(tokens[idx]);
-          }
-        }
-      });
-
-      if (failedTokens.length > 0) {
-        await NotificationToken.deleteMany({ fcmToken: { $in: failedTokens } });
-      }
-    }
-
-    // --------------------------------------------------------
-    // SAVE DB NOTIFICATION LOG (Optional)
-    // --------------------------------------------------------
-    // Only saving for 1-on-1 calls as Stream creates too many logs usually
-    if (receiverId && (type === "voice" || type === "video")) {
-      // Assuming you want to log it even if it's data-only
+    // Only save for voice/video target (id is the receiver)
+    if (type === "voice" || type === "video") {
       await Notification.create({
-        userId: receiverId, 
-        title: `${name} started a ${type}`, // Just for DB history
+        userId: id, // The receiver's ID from req.body
+        title: `${name} started a ${type}`,
         body: `Channel: ${channelName}`,
         type: type
+        // userType REMOVED as requested
       });
     }
 
