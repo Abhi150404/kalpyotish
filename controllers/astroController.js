@@ -1,4 +1,5 @@
 const Astrologer = require("../models/astroModel");
+const FollowAstrologer = require("../models/FollowAstrologer");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
@@ -75,24 +76,94 @@ exports.createAstrologer = async (req, res) => {
 // GET ALL
 exports.getAllAstrologers = async (req, res) => {
   try {
-    const data = await Astrologer.find();
-    res.status(200).json({ success: true, data });
+    const userId = req.query.userId || null; // for isFollowed flag
+
+    const astrologers = await Astrologer.find().lean();
+
+    const astroIds = astrologers.map(a => a._id);
+
+    // Fetch all follow records for these astrologers
+    const followMap = await FollowAstrologer.find({
+      astrologerId: { $in: astroIds },
+      isFollowed: true
+    })
+      .populate("userId", "name profile email") // populate follower details
+      .lean();
+
+    // Group followers by astrologerId
+    const grouped = {};
+    followMap.forEach(f => {
+      if (!grouped[f.astrologerId]) grouped[f.astrologerId] = [];
+      grouped[f.astrologerId].push(f.userId);
+    });
+
+    // Attach followers + count + isFollowed
+    const finalAstros = astrologers.map(a => {
+      const followers = grouped[a._id] || [];
+
+      return {
+        ...a,
+        followers,
+        followersCount: followers.length,
+        isFollowed: userId
+          ? followers.some(f => String(f._id) === String(userId))
+          : false
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: finalAstros
+    });
+
   } catch (err) {
+    console.log("Error in getAllAstrologers:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
 
 // GET SINGLE
 exports.getAstrologer = async (req, res) => {
   try {
-    const data = await Astrologer.findById(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: "Not found" });
+    const astrologerId = req.params.id;
+    const userId = req.query.userId || null; // optional for isFollowed
 
-    res.status(200).json({ success: true, data });
+    const astro = await Astrologer.findById(astrologerId).lean();
+    if (!astro)
+      return res.status(404).json({ success: false, message: "Not found" });
+
+    // Fetch followers
+    const followersData = await FollowAstrologer.find({
+      astrologerId,
+      isFollowed: true
+    })
+      .populate("userId", "name profile email") // followers info
+      .lean();
+
+    const followers = followersData.map(f => f.userId);
+
+    const result = {
+      ...astro,
+      followers,
+      followersCount: followers.length,
+      isFollowed: userId
+        ? followers.some(f => String(f._id) === String(userId))
+        : false
+    };
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+
   } catch (err) {
+    console.log("Error in getAstrologer:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // UPDATE
 exports.updateAstrologer = async (req, res) => {
