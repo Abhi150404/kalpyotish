@@ -2,6 +2,7 @@ const FollowAstrologer = require("../models/FollowAstrologer");
 const User = require("../models/UserDetail");
 const Astrologer = require("../models/astroModel");
 
+
 exports.followUnfollowAstrologer = async (req, res) => {
   try {
     const { userId, astrologerId } = req.body;
@@ -31,6 +32,12 @@ exports.followUnfollowAstrologer = async (req, res) => {
         isFollowed: true
       });
 
+      // 🔥 ADD astrologerId to user's following[]
+      await User.findByIdAndUpdate(
+        userId,
+        { $addToSet: { following: astrologerId } }
+      );
+
       return res.status(200).json({
         success: true,
         message: "Astrologer followed successfully",
@@ -38,9 +45,23 @@ exports.followUnfollowAstrologer = async (req, res) => {
       });
     }
 
-    // SECOND HIT → UNFOLLOW
+    // SECOND HIT → TOGGLE FOLLOW / UNFOLLOW
     followEntry.isFollowed = !followEntry.isFollowed;
     await followEntry.save();
+
+    if (followEntry.isFollowed) {
+      // FOLLOW AGAIN
+      await User.findByIdAndUpdate(
+        userId,
+        { $addToSet: { following: astrologerId } }
+      );
+    } else {
+      // UNFOLLOW
+      await User.findByIdAndUpdate(
+        userId,
+        { $pull: { following: astrologerId } }
+      );
+    }
 
     return res.status(200).json({
       success: true,
@@ -55,3 +76,4 @@ exports.followUnfollowAstrologer = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+

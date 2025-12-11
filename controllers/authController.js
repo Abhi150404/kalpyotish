@@ -220,7 +220,7 @@ exports.getUserList = async (req, res) => {
   try {
     const users = await User.find()
       .sort({ createdAt: -1 })
-      .populate("following"); // now valid
+      .populate("following");
 
     res.status(200).json({
       message: 'Users fetched successfully',
@@ -235,10 +235,11 @@ exports.getUserList = async (req, res) => {
 };
 
 
+
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate("following"); // now valid
+      .populate("following");
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
