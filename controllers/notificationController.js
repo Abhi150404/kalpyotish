@@ -121,18 +121,17 @@ const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
-    // 1. Destructure payload
     const { name, profilePic, id, type, channelName, fcmToken } = req.body;
 
-    // Validate required fields
+    // 1. Basic Validation
     if (!name || !profilePic || !id || !type || !channelName) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     let tokens = [];
-    
+
     // --------------------------------------------------------
-    // 1️⃣ VOICE / VIDEO → USE TOKEN FROM BODY
+    // 1️⃣ VOICE / VIDEO → USE TOKEN FROM REQUEST BODY
     // --------------------------------------------------------
     if (type === "voice" || type === "video") {
       if (!fcmToken) {
@@ -142,7 +141,7 @@ exports.sendNotification = async (req, res) => {
     }
 
     // --------------------------------------------------------
-    // 2️⃣ STREAM → FETCH FOLLOWERS (Keep this if you still use stream)
+    // 2️⃣ STREAM → FETCH FOLLOWERS
     // --------------------------------------------------------
     if (type === "stream") {
       const astro = await Astro.findById(id).select("followers");
@@ -176,20 +175,19 @@ exports.sendNotification = async (req, res) => {
       apns: { payload: { aps: { "content-available": 1 } } }
     };
 
-    // Send Notification
     const result = await admin.messaging().sendEachForMulticast(message);
 
     // --------------------------------------------------------
-    // SAVE DB NOTIFICATION (WITHOUT userType)
+    // SAVE DB NOTIFICATION
     // --------------------------------------------------------
-    // Only save for voice/video target (id is the receiver)
+    // FIX: We add 'userType: "user"' to satisfy your strict Database Schema
     if (type === "voice" || type === "video") {
       await Notification.create({
-        userId: id, // The receiver's ID from req.body
+        userId: id,
         title: `${name} started a ${type}`,
         body: `Channel: ${channelName}`,
-        type: type
-        // userType REMOVED as requested
+        type: type,
+        userType: "user" // <--- ADDED THIS DEFAULT VALUE TO FIX THE ERROR
       });
     }
 
@@ -197,7 +195,8 @@ exports.sendNotification = async (req, res) => {
       success: true,
       message: "Notification processed",
       successCount: result.successCount,
-      failureCount: result.failureCount
+      failureCount: result.failureCount,
+      response: result
     });
 
   } catch (error) {
