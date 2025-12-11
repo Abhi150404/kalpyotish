@@ -10,12 +10,12 @@ const userSchema = new mongoose.Schema({
   dateOfBirth: Date,
   timeOfBirth: String,
   
-  uid: {
-    type: Number,
-    required: true,
-    unique: true,
-    index: true
-  },
+ uid: {
+  type: Number,
+  unique: true,
+  index: true,
+  default: null
+},
 
   fcmToken: { type: String, default: null },
 
