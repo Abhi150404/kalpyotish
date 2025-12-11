@@ -123,17 +123,9 @@ exports.sendNotification = async (req, res) => {
   try {
     const { notification, token, tokens, topic, data } = req.body;
 
-    // Validate required fields properly
-    if (!notification || !notification.title || !notification.body) {
-      return res.status(400).json({
-        success: false,
-        message: "Frontend must send notification: { title, body }"
-      });
-    }
-
-    // Prepare the message object
+    // Create message object (no validation)
     const message = {
-      notification,
+      notification: notification || {},
       data: data || {}
     };
 
@@ -155,7 +147,7 @@ exports.sendNotification = async (req, res) => {
     if (tokens && Array.isArray(tokens)) {
       response = await admin.messaging().sendEachForMulticast({
         tokens,
-        notification,
+        notification: notification || {},
         data: data || {}
       });
 
@@ -170,7 +162,7 @@ exports.sendNotification = async (req, res) => {
     if (topic) {
       response = await admin.messaging().send({
         topic,
-        notification,
+        notification: notification || {},
         data: data || {}
       });
 
