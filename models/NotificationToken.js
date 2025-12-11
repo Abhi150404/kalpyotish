@@ -12,11 +12,8 @@ const notificationTokenSchema = new mongoose.Schema(
       enum: ["UserDetail", "astroModel"], // table names
       required: true,
     },
-    fcmToken: {
-      type: String,
-      required: true,
-      unique: true,
-    },
+   fcmToken: { type: String, default: null },
+
     deviceType: {
       type: String,
       enum: ["android", "ios", "web"],

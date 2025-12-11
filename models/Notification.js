@@ -20,10 +20,8 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    fcmToken: {
-      type: String,   // <-- added token here
-      required: true,
-    },
+ fcmToken: { type: String, default: null },
+
     isRead: {
       type: Boolean,
       default: false,
