@@ -121,124 +121,59 @@ const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
-    const { name, profilePic, id, type, channelName } = req.body;
-    if (!name || !profilePic || !id || !type || !channelName) {
-      return res.status(400).json({ message: "All fields are required" });
+    const { title, body, token, tokens, topic, data } = req.body;
+
+    if (!title || !body) {
+      return res.status(400).json({ success: false, message: "Title & body required" });
     }
 
-    let tokens = [];
-    let receiver = null;
-
-    /** ---------------------------------------------------------
-     * VOICE / VIDEO → SEND ONLY TO THAT ONE USER
-     * --------------------------------------------------------- */
-    if (type === "voice" || type === "video") {
-      const tokenDoc = await NotificationToken.findOne({ userId: id });
-      if (!tokenDoc || !tokenDoc.fcmToken) {
-        return res.status(404).json({ message: "FCM token not found for this user" });
-      }
-
-      tokens = [tokenDoc.fcmToken];
-      receiver = { userId: id, userType: tokenDoc.userType };
-    }
-
-    /** ---------------------------------------------------------
-     * STREAM → SEND ONLY TO FOLLOWERS OF THIS ASTROLOGER
-     * --------------------------------------------------------- */
-    if (type === "stream") {
-      const followers = await User.find({ following: id }).select("_id");
-
-      if (!followers.length) {
-        return res.status(200).json({
-          message: "No followers found, no notifications sent.",
-          tokensSent: 0
-        });
-      }
-
-      const followerIds = followers.map(f => f._id);
-
-      const tokenDocs = await NotificationToken.find({
-        userId: { $in: followerIds },
-        fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken");
-
-      tokens = tokenDocs.map(t => t.fcmToken);
-    }
-
-    if (!tokens.length) {
-      return res.status(200).json({ message: "No valid FCM tokens found" });
-    }
-
-    /** ---------------------------------------------------------
-     * FCM MULTICAST USING sendEachForMulticast()
-     * --------------------------------------------------------- */
+    // Prepare message
     const message = {
-      notification: {
-        title: `${name} started a ${type} call`,
-        body: `Channel: ${channelName}`,
-      },
-      data: {
-        name,
-        profilePic,
-        id,
-        type,
-        channelName
-      },
-      tokens
+      notification: { title, body },
+      data: data || {},
     };
 
-    const response = await admin.messaging().sendEachForMulticast(message);
+    let response;
 
-    /** ---------------------------------------------------------
-     * REMOVE INVALID TOKENS FROM DB
-     * --------------------------------------------------------- */
-    const invalidTokens = [];
-
-    response.responses.forEach((resObj, idx) => {
-      if (!resObj.success) {
-        const err = resObj.error?.code;
-
-        if (
-          err === "messaging/invalid-argument" ||
-          err === "messaging/registration-token-not-registered" ||
-          err === "messaging/invalid-registration-token"
-        ) {
-          invalidTokens.push(tokens[idx]);
-        }
-      }
-    });
-
-    if (invalidTokens.length) {
-      await NotificationToken.deleteMany({ fcmToken: { $in: invalidTokens } });
+    // Send to single token
+    if (token) {
+      message.token = token;
+      response = await admin.messaging().send(message);
+      return res.json({ success: true, message: "Sent to single token", response });
     }
 
-    /** ---------------------------------------------------------
-     * SAVE NOTIFICATION FOR VOICE/VIDEO (ONLY ONE USER)
-     * --------------------------------------------------------- */
-    if (receiver) {
-      await Notification.create({
-        userId: receiver.userId,
-        userType: receiver.userType,
-        title: `${name} started a ${type} call`,
-        body: `Channel: ${channelName}`
+    // Send to multiple tokens
+    if (tokens && Array.isArray(tokens)) {
+      response = await admin.messaging().sendEachForMulticast({
+        tokens,
+        notification: { title, body },
+        data: data || {}
       });
+      return res.json({ success: true, message: "Sent to multiple tokens", response });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Notifications processed",
-      summary: {
-        success: response.successCount,
-        failed: response.failureCount,
-        removedInvalidTokens: invalidTokens.length
-      }
-    });
+    // Send to topic
+    if (topic) {
+      response = await admin.messaging().send({
+        topic,
+        notification: { title, body },
+        data: data || {}
+      });
+      return res.json({ success: true, message: "Sent to topic", response });
+    }
+
+    return res
+      .status(400)
+      .json({ success: false, message: "Provide token, tokens, or topic" });
 
   } catch (error) {
-    console.error("Notification Error:", error);
-    return res.status(500).json({ message: "Internal error", error: error.message });
+    console.log("FCM ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Notification sending failed",
+      error: error.message,
+    });
   }
 };
-
 
 
