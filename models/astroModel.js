@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const astroSchema = new mongoose.Schema(
   {
     name: String,
+    fcmToken: { type: String, default: null },
     eid: String,
     password: String,
     isSystemGeneratedPassword: { type: Boolean, default: true },
