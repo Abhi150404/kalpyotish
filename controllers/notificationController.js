@@ -113,99 +113,115 @@ exports.getNotifications = async (req, res) => {
 };
 
 
+
 const User = require("../models/UserDetail");
 const Astro = require("../models/astroModel");
 const admin = require("../config/fcm");
-
+const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
     const { name, profilePic, id, type, channelName } = req.body;
-
     if (!name || !profilePic || !id || !type || !channelName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     let tokens = [];
     let receiver = null;
-    let fcmToken = null;
 
-    /** ---------------------------------------------
-     * VOICE / VIDEO CALL → SEND TO ONE USER
-     * --------------------------------------------- */
     if (type === "voice" || type === "video") {
-
-      // Find token matching userId in NotificationToken table
       const tokenDoc = await NotificationToken.findOne({ userId: id });
-
       if (!tokenDoc || !tokenDoc.fcmToken) {
         return res.status(404).json({ message: "FCM token not found for this ID" });
       }
-
-      fcmToken = tokenDoc.fcmToken;
-      tokens.push(tokenDoc.fcmToken);
-
+      tokens = [tokenDoc.fcmToken];
       receiver = { userId: id, userType: tokenDoc.userType };
     }
+    else if (type === "stream") {
+      // find users who follow this astrologer (id is astrologerId)
+      const followers = await User.find({ following: id }).select("_id");
+      if (!followers.length) {
+        return res.status(200).json({ message: "No followers to notify", tokensSent: 0 });
+      }
 
-    /** ---------------------------------------------
-     * STREAM → SEND TO EVERYONE
-     * --------------------------------------------- */
-    if (type === "stream") {
-      const allTokens = await NotificationToken.find({
+      const followerIds = followers.map(u => u._id);
+      const tokenDocs = await NotificationToken.find({
+        userId: { $in: followerIds },
         fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken");
+      }).select("fcmToken userId");
 
-      tokens = allTokens.map(t => t.fcmToken);
+      tokens = tokenDocs.map(d => d.fcmToken);
+    } else {
+      return res.status(400).json({ message: "Invalid type" });
     }
 
-    if (tokens.length === 0) {
-      return res.status(400).json({ message: "No FCM tokens found" });
+    if (!tokens.length) {
+      return res.status(200).json({ message: "No FCM tokens found", tokensSent: 0 });
     }
 
-    /** ---------------------------------------------
-     * FCM MESSAGE
-     * --------------------------------------------- */
     const message = {
       notification: {
         title: `${name} started a ${type} call`,
         body: `Channel: ${channelName}`
       },
-      data: {
-        name,
-        profilePic,
-        id,
-        type,
-        channelName,
-        fcmToken
-      },
-      tokens
+      data: { name, profilePic, id, type, channelName }
     };
 
-    const response = await admin.messaging().sendEachForMulticast(message);
+    const chunkSize = 500;
+    const chunks = [];
+    for (let i = 0; i < tokens.length; i += chunkSize) {
+      chunks.push(tokens.slice(i, i + chunkSize));
+    }
 
-    /** ---------------------------------------------
-     * SAVE NOTIFICATION ONLY FOR ONE RECEIVER
-     * --------------------------------------------- */
+    let totalSuccess = 0;
+    let totalFailure = 0;
+    const invalidTokens = [];
+
+    for (const chunk of chunks) {
+      const resp = await admin.messaging().sendMulticast({ ...message, tokens: chunk });
+      resp.responses.forEach((r, idx) => {
+        if (r.success) {
+          totalSuccess++;
+        } else {
+          totalFailure++;
+          const err = r.error;
+          // Determine invalid token
+          if (err && (  
+              err.code === "messaging/invalid-argument" ||
+              err.code === "messaging/registration-token-not-registered" ||
+              err.code === "messaging/invalid-registration-token"
+            )) {
+            invalidTokens.push(chunk[idx]);
+          }
+        }
+      });
+    }
+
+    // Cleanup invalid tokens from DB
+    if (invalidTokens.length) {
+      await NotificationToken.deleteMany({ fcmToken: { $in: invalidTokens } });
+      console.log("Removed invalid tokens:", invalidTokens.length);
+    }
+
+    // Save notification only for voice/video receiver
     if (receiver) {
       await Notification.create({
         userId: receiver.userId,
         userType: receiver.userType,
         title: `${name} started a ${type} call`,
-        body: `Channel: ${channelName}`,
-        fcmToken
+        body: `Channel: ${channelName}`
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Notification sent & saved",
-      response
+      message: "Notifications sent",
+      summary: { totalSuccess, totalFailure, removedInvalid: invalidTokens.length }
     });
 
-  } catch (error) {
-    console.error("Notification Error:", error);
-    res.status(500).json({ message: "Internal error", error });
+  } catch (err) {
+    console.error("Notification Error:", err);
+    res.status(500).json({ message: "Internal error", error: err.message });
   }
 };
 
