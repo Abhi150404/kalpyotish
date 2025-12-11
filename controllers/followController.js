@@ -1,5 +1,6 @@
 const FollowAstrologer = require("../models/FollowAstrologer");
 const User = require("../models/UserDetail");
+const mongoose = require("mongoose");
 const Astrologer = require("../models/astroModel");
 
 
