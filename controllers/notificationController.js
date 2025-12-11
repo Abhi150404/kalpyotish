@@ -129,81 +129,92 @@ exports.sendNotification = async (req, res) => {
     let tokens = [];
     let receiver = null;
 
+    /** ---------------------------------------------------------
+     * VOICE / VIDEO → SEND ONLY TO THAT ONE USER
+     * --------------------------------------------------------- */
     if (type === "voice" || type === "video") {
       const tokenDoc = await NotificationToken.findOne({ userId: id });
       if (!tokenDoc || !tokenDoc.fcmToken) {
-        return res.status(404).json({ message: "FCM token not found for this ID" });
+        return res.status(404).json({ message: "FCM token not found for this user" });
       }
+
       tokens = [tokenDoc.fcmToken];
       receiver = { userId: id, userType: tokenDoc.userType };
     }
-    else if (type === "stream") {
-      // find users who follow this astrologer (id is astrologerId)
+
+    /** ---------------------------------------------------------
+     * STREAM → SEND ONLY TO FOLLOWERS OF THIS ASTROLOGER
+     * --------------------------------------------------------- */
+    if (type === "stream") {
       const followers = await User.find({ following: id }).select("_id");
+
       if (!followers.length) {
-        return res.status(200).json({ message: "No followers to notify", tokensSent: 0 });
+        return res.status(200).json({
+          message: "No followers found, no notifications sent.",
+          tokensSent: 0
+        });
       }
 
-      const followerIds = followers.map(u => u._id);
+      const followerIds = followers.map(f => f._id);
+
       const tokenDocs = await NotificationToken.find({
         userId: { $in: followerIds },
         fcmToken: { $exists: true, $ne: null }
-      }).select("fcmToken userId");
+      }).select("fcmToken");
 
-      tokens = tokenDocs.map(d => d.fcmToken);
-    } else {
-      return res.status(400).json({ message: "Invalid type" });
+      tokens = tokenDocs.map(t => t.fcmToken);
     }
 
     if (!tokens.length) {
-      return res.status(200).json({ message: "No FCM tokens found", tokensSent: 0 });
+      return res.status(200).json({ message: "No valid FCM tokens found" });
     }
 
+    /** ---------------------------------------------------------
+     * FCM MULTICAST USING sendEachForMulticast()
+     * --------------------------------------------------------- */
     const message = {
       notification: {
         title: `${name} started a ${type} call`,
-        body: `Channel: ${channelName}`
+        body: `Channel: ${channelName}`,
       },
-      data: { name, profilePic, id, type, channelName }
+      data: {
+        name,
+        profilePic,
+        id,
+        type,
+        channelName
+      },
+      tokens
     };
 
-    const chunkSize = 500;
-    const chunks = [];
-    for (let i = 0; i < tokens.length; i += chunkSize) {
-      chunks.push(tokens.slice(i, i + chunkSize));
-    }
+    const response = await admin.messaging().sendEachForMulticast(message);
 
-    let totalSuccess = 0;
-    let totalFailure = 0;
+    /** ---------------------------------------------------------
+     * REMOVE INVALID TOKENS FROM DB
+     * --------------------------------------------------------- */
     const invalidTokens = [];
 
-    for (const chunk of chunks) {
-      const resp = await admin.messaging().sendMulticast({ ...message, tokens: chunk });
-      resp.responses.forEach((r, idx) => {
-        if (r.success) {
-          totalSuccess++;
-        } else {
-          totalFailure++;
-          const err = r.error;
-          // Determine invalid token
-          if (err && (  
-              err.code === "messaging/invalid-argument" ||
-              err.code === "messaging/registration-token-not-registered" ||
-              err.code === "messaging/invalid-registration-token"
-            )) {
-            invalidTokens.push(chunk[idx]);
-          }
-        }
-      });
-    }
+    response.responses.forEach((resObj, idx) => {
+      if (!resObj.success) {
+        const err = resObj.error?.code;
 
-    // Cleanup invalid tokens from DB
+        if (
+          err === "messaging/invalid-argument" ||
+          err === "messaging/registration-token-not-registered" ||
+          err === "messaging/invalid-registration-token"
+        ) {
+          invalidTokens.push(tokens[idx]);
+        }
+      }
+    });
+
     if (invalidTokens.length) {
       await NotificationToken.deleteMany({ fcmToken: { $in: invalidTokens } });
-      console.log("Removed invalid tokens:", invalidTokens.length);
     }
 
-    // Save notification only for voice/video receiver
+    /** ---------------------------------------------------------
+     * SAVE NOTIFICATION FOR VOICE/VIDEO (ONLY ONE USER)
+     * --------------------------------------------------------- */
     if (receiver) {
       await Notification.create({
         userId: receiver.userId,
@@ -215,13 +226,17 @@ exports.sendNotification = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Notifications sent",
-      summary: { totalSuccess, totalFailure, removedInvalid: invalidTokens.length }
+      message: "Notifications processed",
+      summary: {
+        success: response.successCount,
+        failed: response.failureCount,
+        removedInvalidTokens: invalidTokens.length
+      }
     });
 
-  } catch (err) {
-    console.error("Notification Error:", err);
-    res.status(500).json({ message: "Internal error", error: err.message });
+  } catch (error) {
+    console.error("Notification Error:", error);
+    return res.status(500).json({ message: "Internal error", error: error.message });
   }
 };
 
