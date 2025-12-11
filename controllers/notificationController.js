@@ -134,6 +134,7 @@ exports.sendNotification = async (req, res) => {
     // 1️⃣ VOICE / VIDEO → SEND TO SINGLE USER
     // --------------------------------------------------------
     if (type === "voice" || type === "video") {
+
       const tokenDoc = await NotificationToken.findOne({ userId: id });
 
       if (!tokenDoc || !tokenDoc.fcmToken) {
@@ -148,22 +149,13 @@ exports.sendNotification = async (req, res) => {
     // 2️⃣ STREAM → SEND TO FOLLOWERS ONLY
     // --------------------------------------------------------
     if (type === "stream") {
-      const astro = await Astro.findById(id).select("followers");
 
+      const astro = await Astro.findById(id).select("followers");
       if (!astro) {
         return res.status(404).json({ success: false, message: "Astrologer not found" });
       }
 
       const followerIds = astro.followers || [];
-
-      if (followerIds.length === 0) {
-        return res.status(200).json({
-          success: true,
-          message: "No followers to send notification",
-          successCount: 0,
-          failureCount: 0
-        });
-      }
 
       const tokenDocs = await NotificationToken.find({
         userId: { $in: followerIds },
@@ -178,7 +170,7 @@ exports.sendNotification = async (req, res) => {
     }
 
     // --------------------------------------------------------
-    // FCM MESSAGE PAYLOAD
+    // FCM MESSAGE
     // --------------------------------------------------------
     const message = {
       tokens,
@@ -198,7 +190,8 @@ exports.sendNotification = async (req, res) => {
     const result = await admin.messaging().sendEachForMulticast(message);
 
     // --------------------------------------------------------
-    // SAVE ONLY FOR SINGLE USER (VOICE / VIDEO)
+    // SAVE DB NOTIFICATION ONLY FOR VOICE/VIDEO
+    // (IMPORTANT: REMOVED fcmToken)
     // --------------------------------------------------------
     if (receiver) {
       await Notification.create({
@@ -226,5 +219,6 @@ exports.sendNotification = async (req, res) => {
     });
   }
 };
+
 
 
