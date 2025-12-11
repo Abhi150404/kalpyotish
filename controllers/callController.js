@@ -94,20 +94,40 @@ exports.updateCallStatus = async (req, res) => {
 exports.getCallHistory = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { type } = req.query; // chat | voice | video | undefined
 
-    const logs = await CallLog.find({
+    let filter = {
       $or: [{ callerId: userId }, { receiverId: userId }]
-    })
-      .populate("callerId", "name profile")
-      .populate("receiverId", "name profile")
+    };
+
+    // Apply type filter ONLY if provided
+    if (type) {
+      if (!["chat", "voice", "video"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid type. Use chat, voice or video."
+        });
+      }
+      filter.callType = type;
+    }
+
+    const logs = await CallLog.find(filter)
+      .populate("callerId", "name profilePhoto")
+      .populate("receiverId", "name profilePhoto")
       .sort({ createdAt: -1 });
 
-    res.json({
+    return res.json({
       success: true,
       message: "Call history fetched",
+      count: logs.length,
       data: logs
     });
+
   } catch (error) {
-    res.status(500).json({ message: "Internal error", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message
+    });
   }
 };
