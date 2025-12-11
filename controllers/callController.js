@@ -244,3 +244,80 @@ exports.getEarnings = async (req, res) => {
     });
   }
 };
+
+
+exports.getWallet = async (req, res) => {
+  try {
+    const { astroId } = req.params;
+    const { filter, type } = req.query;
+
+    if (!astroId) {
+      return res.status(400).json({
+        success: false,
+        message: "Astrologer ID required"
+      });
+    }
+
+    // Base query: Earnings only for this Astrologer
+    let query = { receiverId: astroId, status: "ended" };
+
+    // Apply type filter
+    if (type) {
+      if (!["chat", "voice", "video", "live"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid type. Allowed: chat, voice, video, live"
+        });
+      }
+      query.callType = type;
+    }
+
+    // Date filter
+    if (filter) {
+      const { start, end } = getDateRange(filter);
+      if (start) {
+        query.createdAt = { $gte: start, $lte: end };
+      }
+    }
+
+    const logs = await CallLog.find(query);
+
+    // -----------------------------
+    //  WALLET CALCULATION
+    // -----------------------------
+    let totalMinutes = 0;
+    let walletBalance = 0;
+
+    logs.forEach(call => {
+      const mins = call.duration / 60000; // ms → minutes
+      const earning = mins * 10; // ₹10 per minute
+
+      totalMinutes += mins;
+      walletBalance += earning;
+
+      // Auto-update totalEarning in DB if not saved
+      if (!call.totalEarning || call.totalEarning === 0) {
+        call.totalEarning = earning;
+        call.save();
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: "Wallet fetched successfully",
+      filter: filter || "all",
+      type: type || "all",
+      totalSessions: logs.length,
+      totalMinutes: totalMinutes.toFixed(2),
+      walletBalance: walletBalance.toFixed(2),
+      currency: "INR"
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message
+    });
+  }
+};
