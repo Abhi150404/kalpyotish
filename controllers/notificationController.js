@@ -121,57 +121,77 @@ const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
-    const { title, body, token, tokens, topic, data } = req.body;
+    const { notification, token, tokens, topic, data } = req.body;
 
-    if (!title || !body) {
-      return res.status(400).json({ success: false, message: "Title & body required" });
+    // Validate required fields properly
+    if (!notification || !notification.title || !notification.body) {
+      return res.status(400).json({
+        success: false,
+        message: "Frontend must send notification: { title, body }"
+      });
     }
 
-    // Prepare message
+    // Prepare the message object
     const message = {
-      notification: { title, body },
-      data: data || {},
+      notification,
+      data: data || {}
     };
 
     let response;
 
-    // Send to single token
+    // ---- SEND TO SINGLE TOKEN ----
     if (token) {
       message.token = token;
       response = await admin.messaging().send(message);
-      return res.json({ success: true, message: "Sent to single token", response });
+
+      return res.json({
+        success: true,
+        message: "Notification sent to single device",
+        response
+      });
     }
 
-    // Send to multiple tokens
+    // ---- SEND TO MULTIPLE TOKENS ----
     if (tokens && Array.isArray(tokens)) {
       response = await admin.messaging().sendEachForMulticast({
         tokens,
-        notification: { title, body },
+        notification,
         data: data || {}
       });
-      return res.json({ success: true, message: "Sent to multiple tokens", response });
+
+      return res.json({
+        success: true,
+        message: "Notification sent to multiple devices",
+        response
+      });
     }
 
-    // Send to topic
+    // ---- SEND TO TOPIC ----
     if (topic) {
       response = await admin.messaging().send({
         topic,
-        notification: { title, body },
+        notification,
         data: data || {}
       });
-      return res.json({ success: true, message: "Sent to topic", response });
+
+      return res.json({
+        success: true,
+        message: "Notification sent to topic",
+        response
+      });
     }
 
-    return res
-      .status(400)
-      .json({ success: false, message: "Provide token, tokens, or topic" });
+    return res.status(400).json({
+      success: false,
+      message: "Send 'token', 'tokens' or 'topic' in body"
+    });
 
   } catch (error) {
     console.log("FCM ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Notification sending failed",
-      error: error.message,
+      error: error.message
     });
   }
 };
