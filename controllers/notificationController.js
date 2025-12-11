@@ -121,68 +121,107 @@ const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
-    const { notification, token, tokens, topic, data } = req.body;
+    const { name, profilePic, id, type, channelName } = req.body;
 
-    // Create message object (no validation)
+    if (!name || !profilePic || !id || !type || !channelName) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    let tokens = [];
+    let receiver = null;
+
+    // --------------------------------------------------------
+    // 1️⃣ VOICE / VIDEO → SEND TO SINGLE USER
+    // --------------------------------------------------------
+    if (type === "voice" || type === "video") {
+      const tokenDoc = await NotificationToken.findOne({ userId: id });
+
+      if (!tokenDoc || !tokenDoc.fcmToken) {
+        return res.status(404).json({ success: false, message: "FCM token not found for this user" });
+      }
+
+      tokens.push(tokenDoc.fcmToken);
+      receiver = { userId: id, userType: tokenDoc.userType };
+    }
+
+    // --------------------------------------------------------
+    // 2️⃣ STREAM → SEND TO FOLLOWERS ONLY
+    // --------------------------------------------------------
+    if (type === "stream") {
+      const astro = await Astro.findById(id).select("followers");
+
+      if (!astro) {
+        return res.status(404).json({ success: false, message: "Astrologer not found" });
+      }
+
+      const followerIds = astro.followers || [];
+
+      if (followerIds.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: "No followers to send notification",
+          successCount: 0,
+          failureCount: 0
+        });
+      }
+
+      const tokenDocs = await NotificationToken.find({
+        userId: { $in: followerIds },
+        fcmToken: { $exists: true, $ne: null }
+      }).select("fcmToken");
+
+      tokens = tokenDocs.map(t => t.fcmToken);
+    }
+
+    if (tokens.length === 0) {
+      return res.status(400).json({ success: false, message: "No FCM tokens found" });
+    }
+
+    // --------------------------------------------------------
+    // FCM MESSAGE PAYLOAD
+    // --------------------------------------------------------
     const message = {
-      notification: notification || {},
-      data: data || {}
+      tokens,
+      notification: {
+        title: `${name} started a ${type}`,
+        body: type === "stream" ? "Live now!" : `Channel: ${channelName}`
+      },
+      data: {
+        name,
+        profilePic,
+        id,
+        type,
+        channelName
+      }
     };
 
-    let response;
+    const result = await admin.messaging().sendEachForMulticast(message);
 
-    // ---- SEND TO SINGLE TOKEN ----
-    if (token) {
-      message.token = token;
-      response = await admin.messaging().send(message);
-
-      return res.json({
-        success: true,
-        message: "Notification sent to single device",
-        response
+    // --------------------------------------------------------
+    // SAVE ONLY FOR SINGLE USER (VOICE / VIDEO)
+    // --------------------------------------------------------
+    if (receiver) {
+      await Notification.create({
+        userId: receiver.userId,
+        userType: receiver.userType,
+        title: `${name} started a ${type}`,
+        body: `Channel: ${channelName}`
       });
     }
 
-    // ---- SEND TO MULTIPLE TOKENS ----
-    if (tokens && Array.isArray(tokens)) {
-      response = await admin.messaging().sendEachForMulticast({
-        tokens,
-        notification: notification || {},
-        data: data || {}
-      });
-
-      return res.json({
-        success: true,
-        message: "Notification sent to multiple devices",
-        response
-      });
-    }
-
-    // ---- SEND TO TOPIC ----
-    if (topic) {
-      response = await admin.messaging().send({
-        topic,
-        notification: notification || {},
-        data: data || {}
-      });
-
-      return res.json({
-        success: true,
-        message: "Notification sent to topic",
-        response
-      });
-    }
-
-    return res.status(400).json({
-      success: false,
-      message: "Send 'token', 'tokens' or 'topic' in body"
+    return res.json({
+      success: true,
+      message: "Notification processed",
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+      response: result
     });
 
   } catch (error) {
-    console.log("FCM ERROR:", error);
+    console.error("Notification Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Notification sending failed",
+      message: "Internal server error",
       error: error.message
     });
   }
