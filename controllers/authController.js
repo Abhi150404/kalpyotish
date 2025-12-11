@@ -2,6 +2,9 @@ const User = require('../models/UserDetail');
 const NotificationToken = require("../models/NotificationToken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const Astrologer = require("../models/astroModel");
+const FollowAstrologer = require("../models/FollowAstrologer");
+
 
 const emailStore = {};
 
@@ -122,16 +125,45 @@ exports.getUserStats = async (req, res) => {
 // ✅ Get all users (for admin)
 exports.getUserList = async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 }); // newest first
+    const users = await User.find().sort({ createdAt: -1 }).lean();
+
+    const userIds = users.map(u => u._id);
+
+    // Fetch following data
+    const followDocs = await FollowAstrologer.find({
+      userId: { $in: userIds },
+      isFollowed: true
+    })
+      .populate("astrologerId", "name profilePhoto speciality experience")  // populating astrologer
+      .lean();
+
+    // Group by user
+    const grouped = {};
+    followDocs.forEach(f => {
+      if (!grouped[f.userId]) grouped[f.userId] = [];
+      grouped[f.userId].push(f.astrologerId);
+    });
+
+    // Final output
+    const finalUsers = users.map(u => {
+      const following = grouped[u._id] || [];
+
+      return {
+        ...u,
+        following,
+        followingCount: following.length
+      };
+    });
 
     res.status(200).json({
-      message: 'Users fetched successfully',
-      data: users
+      message: "Users fetched successfully",
+      data: finalUsers
     });
+
   } catch (err) {
-    console.error('Fetch users error:', err);
+    console.error("Fetch users error:", err);
     res.status(500).json({
-      message: 'Failed to fetch users',
+      message: "Failed to fetch users",
       error: err.message
     });
   }
@@ -231,16 +263,46 @@ exports.updateFcmToken = async (req, res) => {
 // Get user by MongoDB _id
 exports.getUserById = async (req, res) => {
   try {
-    const { id } = req.params; // expects MongoDB _id
-    const user = await User.findById(id);
+    const { id } = req.params;
+    const astrologerId = req.query.astrologerId || null;
+
+    const user = await User.findById(id).lean();
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json({ message: "User fetched successfully", data: user });
+
+    // Fetch astrologers this user follows
+    const followDocs = await FollowAstrologer.find({
+      userId: id,
+      isFollowed: true
+    })
+      .populate("astrologerId", "name profilePhoto speciality experience")
+      .lean();
+
+    const following = followDocs.map(f => f.astrologerId);
+
+    const response = {
+      ...user,
+      following,
+      followingCount: following.length,
+      isFollowingAstrologer: astrologerId
+        ? following.some(a => String(a._id) === String(astrologerId))
+        : false
+    };
+
+    res.json({
+      message: "User fetched successfully",
+      data: response
+    });
+
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch user", error: err.message });
+    res.status(500).json({
+      message: "Failed to fetch user",
+      error: err.message
+    });
   }
 };
+
 
 // ...existing code...
 // To check if email is verified before registration
