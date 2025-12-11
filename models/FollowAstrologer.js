@@ -9,7 +9,7 @@ const FollowAstrologerSchema = new mongoose.Schema(
     },
     astrologerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "astroModel",
+      ref: "Astro",
       required: true
     },
     isFollowed: {

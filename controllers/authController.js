@@ -123,51 +123,7 @@ exports.getUserStats = async (req, res) => {
 };
 
 // ✅ Get all users (for admin)
-exports.getUserList = async (req, res) => {
-  try {
-    const users = await User.find().sort({ createdAt: -1 }).lean();
 
-    const userIds = users.map(u => u._id);
-
-    // Fetch following data
-    const followDocs = await FollowAstrologer.find({
-      userId: { $in: userIds },
-      isFollowed: true
-    })
-      .populate("astrologerId", "name profilePhoto speciality experience")  // populating astrologer
-      .lean();
-
-    // Group by user
-    const grouped = {};
-    followDocs.forEach(f => {
-      if (!grouped[f.userId]) grouped[f.userId] = [];
-      grouped[f.userId].push(f.astrologerId);
-    });
-
-    // Final output
-    const finalUsers = users.map(u => {
-      const following = grouped[u._id] || [];
-
-      return {
-        ...u,
-        following,
-        followingCount: following.length
-      };
-    });
-
-    res.status(200).json({
-      message: "Users fetched successfully",
-      data: finalUsers
-    });
-
-  } catch (err) {
-    console.error("Fetch users error:", err);
-    res.status(500).json({
-      message: "Failed to fetch users",
-      error: err.message
-    });
-  }
-};
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -261,47 +217,40 @@ exports.updateFcmToken = async (req, res) => {
 // ...existing code...
 
 // Get user by MongoDB _id
-exports.getUserById = async (req, res) => {
+exports.getUserList = async (req, res) => {
   try {
-    const { id } = req.params;
-    const astrologerId = req.query.astrologerId || null;
+    const users = await User.find()
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "following",
+        populate: { path: "astrologerId", select: "name profilePhoto email" }
+      });
 
-    const user = await User.findById(id).lean();
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Fetch astrologers this user follows
-    const followDocs = await FollowAstrologer.find({
-      userId: id,
-      isFollowed: true
-    })
-      .populate("astrologerId", "name profilePhoto speciality experience")
-      .lean();
-
-    const following = followDocs.map(f => f.astrologerId);
-
-    const response = {
-      ...user,
-      following,
-      followingCount: following.length,
-      isFollowingAstrologer: astrologerId
-        ? following.some(a => String(a._id) === String(astrologerId))
-        : false
-    };
-
-    res.json({
-      message: "User fetched successfully",
-      data: response
+    res.status(200).json({
+      message: 'Users fetched successfully',
+      data: users
     });
-
   } catch (err) {
-    res.status(500).json({
-      message: "Failed to fetch user",
-      error: err.message
-    });
+    res.status(500).json({ message: 'Failed to fetch users', error: err.message });
   }
 };
+
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate({
+        path: "following",
+        populate: { path: "astrologerId", select: "name profilePhoto email" }
+      });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "User fetched successfully", data: user });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user", error: err.message });
+  }
+};
+
 
 
 // ...existing code...
