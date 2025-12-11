@@ -14,13 +14,17 @@ const callLogSchema = new mongoose.Schema(
       required: true
     },
 
+    // chat added as you need earnings by chat, voice, video, live
     callType: {
       type: String,
-      enum: ["voice", "video"],
+      enum: ["chat", "voice", "video", "live"],
       required: true
     },
 
-    channelName: { type: String, required: true },
+    channelName: { 
+      type: String, 
+      required: true 
+    },
 
     status: {
       type: String,
@@ -28,7 +32,26 @@ const callLogSchema = new mongoose.Schema(
       default: "ringing"
     },
 
-    endTime: { type: Date }
+    // session duration (very important for earnings)
+    duration: {
+      type: Number, // in milliseconds
+      default: 0
+    },
+
+    // calculate earning based on rate per minute or rate per second
+    ratePerMinute: {
+      type: Number,
+      default: 0
+    },
+
+    totalEarning: {
+      type: Number,
+      default: 0
+    },
+
+    endTime: { 
+      type: Date 
+    }
   },
   { timestamps: true }
 );

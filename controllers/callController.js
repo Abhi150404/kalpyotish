@@ -5,9 +5,9 @@ const NotificationToken = require("../models/NotificationToken");
 exports.startCall = async (req, res) => {
   try {
     const {
-      callerId,        // must be UserDetail._id
-      receiverId,      // must be Astro._id
-      callType,
+      callerId,        // UserDetail._id
+      receiverId,      // Astro._id
+      callType,        // chat | voice | video | live
       channelName,
       callerName,
       profilePic
@@ -23,10 +23,13 @@ exports.startCall = async (req, res) => {
       receiverId,
       callType,
       channelName,
-      status: "ringing"
+      status: "ringing",
+      duration: 0,
+      ratePerMinute: 0,
+      totalEarning: 0
     });
 
-    // Get receiver FCM token (Astrologer)
+    // Get receiver FCM (Astrologer)
     const tokenDoc = await NotificationToken.findOne({ userId: receiverId });
 
     if (tokenDoc?.fcmToken) {
@@ -53,10 +56,12 @@ exports.startCall = async (req, res) => {
       message: "Call started",
       data: call
     });
+
   } catch (error) {
     res.status(500).json({ message: "Internal error", error: error.message });
   }
 };
+
 
 
 exports.updateCallStatus = async (req, res) => {
@@ -68,12 +73,16 @@ exports.updateCallStatus = async (req, res) => {
     }
 
     const call = await CallLog.findOne({ channelName });
-
     if (!call) return res.status(404).json({ message: "Call not found" });
 
-    // Set endTime only for these statuses
+    // Set end time only for completed states
     if (["rejected", "missed", "ended"].includes(status)) {
       call.endTime = new Date();
+
+      // Calculate duration
+      const start = new Date(call.createdAt);
+      const end = new Date(call.endTime);
+      call.duration = end - start;   // milliseconds
     }
 
     call.status = status;
@@ -91,21 +100,22 @@ exports.updateCallStatus = async (req, res) => {
 };
 
 
+
+
 exports.getCallHistory = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { type } = req.query; // chat | voice | video | undefined
+    const { type } = req.query;
 
     let filter = {
       $or: [{ callerId: userId }, { receiverId: userId }]
     };
 
-    // Apply type filter ONLY if provided
     if (type) {
-      if (!["chat", "voice", "video"].includes(type)) {
+      if (!["chat", "voice", "video", "live"].includes(type)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid type. Use chat, voice or video."
+          message: "Invalid type. Use chat, voice, video or live."
         });
       }
       filter.callType = type;
@@ -125,6 +135,109 @@ exports.getCallHistory = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message
+    });
+  }
+};
+
+
+function getDateRange(filter) {
+  const now = new Date();
+  let start;
+
+  switch (filter) {
+    case "day":
+      start = new Date(now.setHours(0, 0, 0, 0));
+      break;
+
+    case "week": {
+      const first = now.getDate() - now.getDay(); 
+      start = new Date(now.setDate(first));
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+
+    case "month":
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+
+    default:
+      start = null;  // all time
+  }
+
+  return { start, end: new Date() };
+}
+
+
+exports.getEarnings = async (req, res) => {
+  try {
+    const { astroId } = req.params;
+    const { filter, type } = req.query;
+
+    // Validate astrologer
+    if (!astroId) {
+      return res.status(400).json({
+        success: false,
+        message: "Astrologer ID required"
+      });
+    }
+
+    // Only receiverId (Astro)
+    let query = { receiverId: astroId, status: "ended" };
+
+    // 🎯 Apply call type filter (voice/video/chat/live)
+    if (type) {
+      if (!["chat", "voice", "video", "live"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid type. Use chat, voice, video, live"
+        });
+      }
+      query.callType = type;
+    }
+
+    // 🎯 Apply date range filter
+    if (filter) {
+      const { start, end } = getDateRange(filter);
+      if (start) query.createdAt = { $gte: start, $lte: end };
+    }
+
+    // 🔍 Fetch Logs
+    const calls = await CallLog.find(query);
+
+    // 🎯 Calculate earnings
+    let totalEarning = 0;
+    let totalMinutes = 0;
+
+    calls.forEach(call => {
+      const mins = call.duration / 60000; // convert ms → minutes
+      totalMinutes += mins;
+
+      const earning = mins * call.ratePerMinute;
+      totalEarning += earning;
+
+      // Auto-update DB if totalEarning missing
+      if (!call.totalEarning || call.totalEarning === 0) {
+        call.totalEarning = earning;
+        call.save();
+      }
+    });
+
+    return res.json({
+      success: true,
+      filter: filter || "all",
+      type: type || "all",
+      totalCalls: calls.length,
+      totalMinutes: totalMinutes.toFixed(2),
+      totalEarning: totalEarning.toFixed(2),
+      currency: "INR",
+      data: calls
+    });
+
+  } catch (error) {
+    res.status(500).json({
       success: false,
       message: "Internal error",
       error: error.message
