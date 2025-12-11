@@ -14,66 +14,43 @@ exports.followUnfollowAstrologer = async (req, res) => {
       });
     }
 
-    // Check if user & astrologer exist
     const user = await User.findById(userId);
     const astro = await Astrologer.findById(astrologerId);
 
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!astro) return res.status(404).json({ message: "Astrologer not found" });
 
-    // Check existing follow entry
-    let followEntry = await FollowAstrologer.findOne({ userId, astrologerId });
+    // Check if user already followed
+    const alreadyFollowing = user.following.includes(astrologerId);
 
-    // FIRST HIT → FOLLOW
-    if (!followEntry) {
-      followEntry = await FollowAstrologer.create({
-        userId,
-        astrologerId,
-        isFollowed: true
-      });
-
-      // 🔥 ADD astrologerId to user's following[]
-      await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { following: astrologerId } }
-      );
+    if (!alreadyFollowing) {
+      // FOLLOW
+      user.following.push(astrologerId);
+      await user.save();
 
       return res.status(200).json({
         success: true,
         message: "Astrologer followed successfully",
-        data: followEntry
+        following: user.following
       });
-    }
-
-    // SECOND HIT → TOGGLE FOLLOW / UNFOLLOW
-    followEntry.isFollowed = !followEntry.isFollowed;
-    await followEntry.save();
-
-    if (followEntry.isFollowed) {
-      // FOLLOW AGAIN
-      await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { following: astrologerId } }
-      );
     } else {
       // UNFOLLOW
-      await User.findByIdAndUpdate(
-        userId,
-        { $pull: { following: astrologerId } }
+      user.following = user.following.filter(
+        id => id.toString() !== astrologerId
       );
-    }
+      await user.save();
 
-    return res.status(200).json({
-      success: true,
-      message: followEntry.isFollowed
-        ? "Astrologer followed again"
-        : "Astrologer unfollowed",
-      data: followEntry
-    });
+      return res.status(200).json({
+        success: true,
+        message: "Astrologer unfollowed successfully",
+        following: user.following
+      });
+    }
 
   } catch (error) {
     console.error("Follow/Unfollow Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
