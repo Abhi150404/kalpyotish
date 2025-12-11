@@ -130,11 +130,12 @@ exports.sendNotification = async (req, res) => {
     let receiver = null;
     let fcmToken = null;
 
-    /** -------------------------------------------------------
-     * VOICE / VIDEO CALL → SEND TO ONE USER (NO CHANGE)
-     * ------------------------------------------------------- */
+    /** ---------------------------------------------
+     * VOICE / VIDEO CALL → SEND TO ONE USER
+     * --------------------------------------------- */
     if (type === "voice" || type === "video") {
 
+      // Find token matching userId in NotificationToken table
       const tokenDoc = await NotificationToken.findOne({ userId: id });
 
       if (!tokenDoc || !tokenDoc.fcmToken) {
@@ -147,44 +148,24 @@ exports.sendNotification = async (req, res) => {
       receiver = { userId: id, userType: tokenDoc.userType };
     }
 
-    /** -------------------------------------------------------
-     * STREAM → SEND ONLY TO FOLLOWERS OF THIS ASTROLOGER
-     * ------------------------------------------------------- */
+    /** ---------------------------------------------
+     * STREAM → SEND TO EVERYONE
+     * --------------------------------------------- */
     if (type === "stream") {
-
-      // 1️⃣ Get users who follow this astrologer
-      const followers = await User.find({
-        following: id
-      }).select("_id");
-
-      if (followers.length === 0) {
-        return res.status(200).json({
-          message: "No followers found, no notifications sent",
-          tokensSent: 0
-        });
-      }
-
-      const followerIds = followers.map(u => u._id);
-
-      // 2️⃣ Get tokens of ONLY these followers
-      const followerTokens = await NotificationToken.find({
-        userId: { $in: followerIds },
+      const allTokens = await NotificationToken.find({
         fcmToken: { $exists: true, $ne: null }
       }).select("fcmToken");
 
-      tokens = followerTokens.map(t => t.fcmToken);
+      tokens = allTokens.map(t => t.fcmToken);
     }
 
     if (tokens.length === 0) {
-      return res.status(200).json({
-        message: "No valid FCM tokens found for followers",
-        tokensSent: 0
-      });
+      return res.status(400).json({ message: "No FCM tokens found" });
     }
 
-    /** -------------------------------------------------------
-     * SEND FCM MESSAGE
-     * ------------------------------------------------------- */
+    /** ---------------------------------------------
+     * FCM MESSAGE
+     * --------------------------------------------- */
     const message = {
       notification: {
         title: `${name} started a ${type} call`,
@@ -203,9 +184,9 @@ exports.sendNotification = async (req, res) => {
 
     const response = await admin.messaging().sendEachForMulticast(message);
 
-    /** -------------------------------------------------------
-     * SAVE ONLY FOR DIRECT RECEIVER (VOICE/VIDEO)
-     * ------------------------------------------------------- */
+    /** ---------------------------------------------
+     * SAVE NOTIFICATION ONLY FOR ONE RECEIVER
+     * --------------------------------------------- */
     if (receiver) {
       await Notification.create({
         userId: receiver.userId,
@@ -218,8 +199,7 @@ exports.sendNotification = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Notification sent successfully",
-      totalTokens: tokens.length,
+      message: "Notification sent & saved",
       response
     });
 
@@ -228,7 +208,6 @@ exports.sendNotification = async (req, res) => {
     res.status(500).json({ message: "Internal error", error });
   }
 };
-
 
 
 
