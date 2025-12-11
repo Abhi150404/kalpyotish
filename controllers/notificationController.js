@@ -180,14 +180,14 @@ exports.sendNotification = async (req, res) => {
     // --------------------------------------------------------
     // SAVE DB NOTIFICATION
     // --------------------------------------------------------
-    // FIX: We add 'userType: "user"' to satisfy your strict Database Schema
     if (type === "voice" || type === "video") {
       await Notification.create({
         userId: id,
         title: `${name} started a ${type}`,
         body: `Channel: ${channelName}`,
         type: type,
-        userType: "user" // <--- ADDED THIS DEFAULT VALUE TO FIX THE ERROR
+        // 👇 FIX: Changed "user" to "UserDetail" to match your Schema Enum
+        userType: "UserDetail" 
       });
     }
 
@@ -208,6 +208,5 @@ exports.sendNotification = async (req, res) => {
     });
   }
 };
-
 
 
