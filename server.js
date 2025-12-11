@@ -68,6 +68,7 @@ app.use('/api', privacyPolicyRoutes);
 const feedbackRoutes = require("./routes/feedbackRoutes");
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api", require("./routes/followRoutes"));
+app.use("/api/call",require("./routes/callRoutes.js"));
 
 
 
