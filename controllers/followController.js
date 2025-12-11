@@ -7,50 +7,47 @@ exports.followUnfollowAstrologer = async (req, res) => {
   try {
     const { userId, astrologerId } = req.body;
 
-    if (!userId || !astrologerId) {
-      return res.status(400).json({
-        success: false,
-        message: "userId & astrologerId are required"
-      });
-    }
-
     const user = await User.findById(userId);
-    const astro = await Astrologer.findById(astrologerId);
-
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    const astro = await Astrologer.findById(astrologerId);
     if (!astro) return res.status(404).json({ message: "Astrologer not found" });
 
-    // Check if user already followed
-    const alreadyFollowing = user.following.includes(astrologerId);
+    // Convert to ObjectId
+    const astroObjId = new mongoose.Types.ObjectId(astrologerId);
 
-    if (!alreadyFollowing) {
+    const isAlreadyFollowing = user.following.some(
+      (id) => id.toString() === astrologerId
+    );
+
+    if (!isAlreadyFollowing) {
       // FOLLOW
-      user.following.push(astrologerId);
+      user.following.push(astroObjId);
       await user.save();
 
       return res.status(200).json({
         success: true,
-        message: "Astrologer followed successfully",
+        message: "Astrologer followed",
         following: user.following
       });
     } else {
       // UNFOLLOW
       user.following = user.following.filter(
-        id => id.toString() !== astrologerId
+        (id) => id.toString() !== astrologerId
       );
       await user.save();
 
       return res.status(200).json({
         success: true,
-        message: "Astrologer unfollowed successfully",
+        message: "Astrologer unfollowed",
         following: user.following
       });
     }
 
-  } catch (error) {
-    console.error("Follow/Unfollow Error:", error);
-    res.status(500).json({ success: false, error: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 
