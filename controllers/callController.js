@@ -321,3 +321,91 @@ exports.getWallet = async (req, res) => {
     });
   }
 };
+
+
+
+
+exports.getAstroDashboard = async (req, res) => {
+  try {
+    const { astroId } = req.params;
+    const { filter } = req.query;
+
+    if (!astroId) {
+      return res.status(400).json({
+        success: false,
+        message: "Astrologer ID required"
+      });
+    }
+
+    // Base query only for this astrologer
+    let query = { receiverId: astroId, status: "ended" };
+
+    // Apply date filter
+    if (filter) {
+      const { start, end } = getDateRange(filter);
+      if (start) query.createdAt = { $gte: start, $lte: end };
+    }
+
+    // Fetch all call logs
+    const logs = await CallLog.find(query);
+
+    // Initialise counters
+    let summary = {
+      voice: { count: 0, minutes: 0, earning: 0 },
+      video: { count: 0, minutes: 0, earning: 0 },
+      chat: { count: 0, minutes: 0, earning: 0 },
+      live: { count: 0, minutes: 0, earning: 0 },
+      totalEarning: 0
+    };
+
+    logs.forEach(call => {
+      const mins = call.duration / 60000; // ms → mins
+      const earning = mins * 10; // ₹10/minute
+
+      if (summary[call.callType]) {
+        summary[call.callType].count += 1;
+        summary[call.callType].minutes += mins;
+        summary[call.callType].earning += earning;
+      }
+
+      summary.totalEarning += earning;
+    });
+
+    return res.json({
+      success: true,
+      message: "Astrologer dashboard fetched",
+      filter: filter || "all",
+      data: {
+        voice: {
+          sessions: summary.voice.count,
+          minutes: summary.voice.minutes.toFixed(2),
+          earning: summary.voice.earning.toFixed(2)
+        },
+        video: {
+          sessions: summary.video.count,
+          minutes: summary.video.minutes.toFixed(2),
+          earning: summary.video.earning.toFixed(2)
+        },
+        chat: {
+          sessions: summary.chat.count,
+          minutes: summary.chat.minutes.toFixed(2),
+          earning: summary.chat.earning.toFixed(2)
+        },
+        live: {
+          sessions: summary.live.count,
+          minutes: summary.live.minutes.toFixed(2),
+          earning: summary.live.earning.toFixed(2)
+        },
+        totalEarning: summary.totalEarning.toFixed(2),
+        currency: "INR"
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message
+    });
+  }
+};
