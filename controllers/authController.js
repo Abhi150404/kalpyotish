@@ -216,40 +216,39 @@ exports.updateFcmToken = async (req, res) => {
 
 // ...existing code...
 
-// Get user by MongoDB _id
 exports.getUserList = async (req, res) => {
   try {
     const users = await User.find()
       .sort({ createdAt: -1 })
-      .populate({
-        path: "following",
-        populate: { path: "astrologerId", select: "name profilePhoto email" }
-      });
+      .populate("following"); // now valid
 
     res.status(200).json({
       message: 'Users fetched successfully',
       data: users
     });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch users', error: err.message });
+    res.status(500).json({
+      message: 'Failed to fetch users',
+      error: err.message
+    });
   }
 };
+
 
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate({
-        path: "following",
-        populate: { path: "astrologerId", select: "name profilePhoto email" }
-      });
+      .populate("following"); // now valid
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({ message: "User fetched successfully", data: user });
+
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch user", error: err.message });
   }
 };
+
 
 
 

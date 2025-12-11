@@ -8,20 +8,31 @@ const userSchema = new mongoose.Schema({
   mobileNo: String,
   profile: String, // Cloudinary URL
   dateOfBirth: Date,
-  timeOfBirth: String, // or Date if storing with time zone logic
-  uid: { // <-- ADD THIS FIELD
+  timeOfBirth: String,
+  
+  uid: {
     type: Number,
     required: true,
     unique: true,
-    index: true // Add an index for faster lookups
+    index: true
   },
-   fcmToken: { type: String, default: null },
+
+  fcmToken: { type: String, default: null },
+
+  // ⭐ ADD THIS FIELD
+  following: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Astro" // must match model name from astroModel.js
+    }
+  ],
 
   wallet: {
     balance: { type: Number, default: 0 },
     currency: { type: String, default: 'INR' }
   }
-}, { timestamps: true });
+},
+{ timestamps: true }
+);
 
 module.exports = mongoose.model('UserDetail', userSchema, 'UserDetail');
-
