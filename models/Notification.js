@@ -20,6 +20,11 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+       type: {
+      type: String,
+      enum: ["voice", "video", "stream", "general"],
+      default: "general"
+    },
  fcmToken: { type: String, default: null },
 
     isRead: {

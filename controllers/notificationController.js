@@ -123,90 +123,169 @@ exports.sendNotification = async (req, res) => {
   try {
     const { name, profilePic, id, type, channelName, fcmToken } = req.body;
 
-    // 1. Basic Validation
-    if (!name || !profilePic || !id || !type || !channelName) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+    if (!name || !id || !type || !channelName) {
+      return res.status(400).json({ success: false, message: "Missing fields" });
     }
 
     let tokens = [];
 
-    // --------------------------------------------------------
-    // 1️⃣ VOICE / VIDEO → USE TOKEN FROM REQUEST BODY
-    // --------------------------------------------------------
-    if (type === "voice" || type === "video") {
+    // Voice / Video → single user
+    if (["voice", "video"].includes(type)) {
       if (!fcmToken) {
-        return res.status(400).json({ success: false, message: "fcmToken is required for voice/video" });
+        return res.status(400).json({ success: false, message: "FCM token required" });
       }
       tokens.push(fcmToken);
     }
 
-    // --------------------------------------------------------
-    // 2️⃣ STREAM → FETCH FOLLOWERS
-    // --------------------------------------------------------
+    // Stream → followers
     if (type === "stream") {
       const astro = await Astro.findById(id).select("followers");
-      if (astro && astro.followers) {
+      if (astro?.followers?.length) {
         const tokenDocs = await NotificationToken.find({
-          userId: { $in: astro.followers },
-          fcmToken: { $exists: true, $ne: null }
+          userId: { $in: astro.followers }
         }).select("fcmToken");
-        
+
         tokens = tokenDocs.map(t => t.fcmToken);
       }
     }
 
-    if (tokens.length === 0) {
-      return res.status(400).json({ success: false, message: "No FCM tokens found" });
-    }
+    // 🟢 SAVE DB NOTIFICATION (ALWAYS)
+    await Notification.create({
+      userId: id,
+      userType: "UserDetail",
+      title: `${name} started a ${type}`,
+      body: `Channel: ${channelName}`,
+      type
+    });
 
-    // --------------------------------------------------------
-    // FCM MESSAGE (DATA ONLY)
-    // --------------------------------------------------------
-    const message = {
-      tokens: tokens,
-      data: {
-        name: String(name),
-        profilePic: String(profilePic),
-        id: String(id),
-        type: String(type),
-        channelName: String(channelName)
-      },
-      android: { priority: "high" },
-      apns: { payload: { aps: { "content-available": 1 } } }
-    };
-
-    const result = await admin.messaging().sendEachForMulticast(message);
-
-    // --------------------------------------------------------
-    // SAVE DB NOTIFICATION
-    // --------------------------------------------------------
-    if (type === "voice" || type === "video") {
-      await Notification.create({
-        userId: id,
-        title: `${name} started a ${type}`,
-        body: `Channel: ${channelName}`,
-        type: type,
-        // 👇 FIX: Changed "user" to "UserDetail" to match your Schema Enum
-        userType: "UserDetail" 
+    // 🔔 SEND PUSH (OPTIONAL SUCCESS)
+    let fcmResponse = null;
+    if (tokens.length) {
+      fcmResponse = await admin.messaging().sendEachForMulticast({
+        tokens,
+        data: {
+          name,
+          profilePic,
+          id,
+          type,
+          channelName
+        }
       });
     }
 
     return res.json({
       success: true,
-      message: "Notification processed",
-      successCount: result.successCount,
-      failureCount: result.failureCount,
-      response: result
+      message: "Notification saved & processed",
+      fcmResponse
     });
 
-  } catch (error) {
-    console.error("Notification Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message
-    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+exports.sendNotification = async (req, res) => {
+  try {
+    const { name, profilePic, id, type, channelName, fcmToken } = req.body;
+
+    if (!name || !id || !type || !channelName) {
+      return res.status(400).json({ success: false, message: "Missing fields" });
+    }
+
+    let tokens = [];
+
+    // Voice / Video → single user
+    if (["voice", "video"].includes(type)) {
+      if (!fcmToken) {
+        return res.status(400).json({ success: false, message: "FCM token required" });
+      }
+      tokens.push(fcmToken);
+    }
+
+    // Stream → followers
+    if (type === "stream") {
+      const astro = await Astro.findById(id).select("followers");
+      if (astro?.followers?.length) {
+        const tokenDocs = await NotificationToken.find({
+          userId: { $in: astro.followers }
+        }).select("fcmToken");
+
+        tokens = tokenDocs.map(t => t.fcmToken);
+      }
+    }
+
+    // 🟢 SAVE DB NOTIFICATION (ALWAYS)
+    await Notification.create({
+      userId: id,
+      userType: "UserDetail",
+      title: `${name} started a ${type}`,
+      body: `Channel: ${channelName}`,
+      type
+    });
+
+    // 🔔 SEND PUSH (OPTIONAL SUCCESS)
+    let fcmResponse = null;
+    if (tokens.length) {
+      fcmResponse = await admin.messaging().sendEachForMulticast({
+        tokens,
+        data: {
+          name,
+          profilePic,
+          id,
+          type,
+          channelName
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Notification saved & processed",
+      fcmResponse
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// PATCH /api/notifications/read/:id
+exports.markAsRead = async (req, res) => {
+  try {
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    res.json({ success: true, data: notification });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// GET /api/notifications/unread-count?userId=&userType=
+exports.getUnreadCount = async (req, res) => {
+  const { userId, userType } = req.query;
+
+  const count = await Notification.countDocuments({
+    userId,
+    userType,
+    isRead: false
+  });
+
+  res.json({ success: true, unreadCount: count });
+};
+
 
 

@@ -12,6 +12,11 @@ const notificationTokenSchema = new mongoose.Schema(
       enum: ["UserDetail", "astroModel"], // table names
       required: true,
     },
+       type: {
+      type: String,
+      enum: ["voice", "video", "stream", "general"],
+      default: "general"
+    },
    fcmToken: { type: String, default: null },
 
     deviceType: {

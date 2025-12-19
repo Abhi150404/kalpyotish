@@ -17,4 +17,10 @@ router.get("/list", getNotifications);
 
 router.post("/send-notification", sendNotification);
 
+
+router.get("/UserNotification", getUserNotifications);
+router.patch("/read/:id", markAsRead);
+router.get("/unread-count", getUnreadCount);
+
+
 module.exports = router;
