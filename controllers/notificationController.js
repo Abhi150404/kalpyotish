@@ -186,71 +186,31 @@ exports.sendNotification = async (req, res) => {
 };
 
 
-exports.sendNotification = async (req, res) => {
+// GET /api/notifications?userId=&userType=
+exports.getUserNotifications = async (req, res) => {
   try {
-    const { name, profilePic, id, type, channelName, fcmToken } = req.body;
+    const { userId, userType } = req.query;
 
-    if (!name || !id || !type || !channelName) {
-      return res.status(400).json({ success: false, message: "Missing fields" });
+    if (!userId || !userType) {
+      return res.status(400).json({ message: "userId & userType required" });
     }
 
-    let tokens = [];
+    const notifications = await Notification.find({
+      userId,
+      userType
+    }).sort({ createdAt: -1 });
 
-    // Voice / Video → single user
-    if (["voice", "video"].includes(type)) {
-      if (!fcmToken) {
-        return res.status(400).json({ success: false, message: "FCM token required" });
-      }
-      tokens.push(fcmToken);
-    }
-
-    // Stream → followers
-    if (type === "stream") {
-      const astro = await Astro.findById(id).select("followers");
-      if (astro?.followers?.length) {
-        const tokenDocs = await NotificationToken.find({
-          userId: { $in: astro.followers }
-        }).select("fcmToken");
-
-        tokens = tokenDocs.map(t => t.fcmToken);
-      }
-    }
-
-    // 🟢 SAVE DB NOTIFICATION (ALWAYS)
-    await Notification.create({
-      userId: id,
-      userType: "UserDetail",
-      title: `${name} started a ${type}`,
-      body: `Channel: ${channelName}`,
-      type
-    });
-
-    // 🔔 SEND PUSH (OPTIONAL SUCCESS)
-    let fcmResponse = null;
-    if (tokens.length) {
-      fcmResponse = await admin.messaging().sendEachForMulticast({
-        tokens,
-        data: {
-          name,
-          profilePic,
-          id,
-          type,
-          channelName
-        }
-      });
-    }
-
-    return res.json({
+    res.json({
       success: true,
-      message: "Notification saved & processed",
-      fcmResponse
+      count: notifications.length,
+      data: notifications
     });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 // PATCH /api/notifications/read/:id
