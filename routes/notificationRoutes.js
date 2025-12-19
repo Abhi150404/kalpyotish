@@ -1,6 +1,16 @@
 const express = require("express");
-const { saveFcmToken, updateFcmToken,  createNotification,sendNotification,
-  getNotifications, } = require("../controllers/notificationController");
+const express = require("express");
+
+const {
+  saveFcmToken,
+  updateFcmToken,
+  createNotification,
+  sendNotification,
+  getNotifications,
+  getUserNotifications,   // ✅ ADD
+  markAsRead,             // ✅ ADD
+  getUnreadCount          // ✅ ADD
+} = require("../controllers/notificationController");
 
 const router = express.Router();
 
