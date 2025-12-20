@@ -9,7 +9,8 @@ const {
   deleteAstrologer,
   loginAstro,
   sendResetOtp,
-  verifyOtpAndResetPassword
+  verifyOtpAndResetPassword,
+  updateAstrologerAvailability
 } = require("../controllers/astroController");
 
 const { astrologerUploads } = require("../utilis/cloudinary");
@@ -32,6 +33,11 @@ router.delete("/delete/:id", deleteAstrologer);
 router.post("/login", loginAstro);
 router.post("/reset/send-otp", sendResetOtp);
 router.post("/reset/verify", verifyOtpAndResetPassword);
+
+router.patch(
+  "/update-availability/:id",
+  updateAstrologerAvailability
+);
 
 
 module.exports = router;

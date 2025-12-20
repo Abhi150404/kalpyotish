@@ -315,3 +315,61 @@ exports.verifyOtpAndResetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+// PATCH /api/astrologer/update-availability/:id
+exports.updateAstrologerAvailability = async (req, res) => {
+  try {
+    const astrologerId = req.params.id;
+    const { chat, call, videoCall } = req.body;
+
+    if (!astrologerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Astrologer ID is required"
+      });
+    }
+
+    // Build update object dynamically
+    const availabilityUpdate = {};
+
+    if (typeof chat === "boolean") availabilityUpdate["available_at.chat"] = chat;
+    if (typeof call === "boolean") availabilityUpdate["available_at.call"] = call;
+    if (typeof videoCall === "boolean") availabilityUpdate["available_at.videoCall"] = videoCall;
+
+    if (Object.keys(availabilityUpdate).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one availability field is required"
+      });
+    }
+
+    const astrologer = await Astrologer.findByIdAndUpdate(
+      astrologerId,
+      { $set: availabilityUpdate },
+      { new: true }
+    );
+
+    if (!astrologer) {
+      return res.status(404).json({
+        success: false,
+        message: "Astrologer not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Availability updated successfully",
+      data: {
+        astrologerId: astrologer._id,
+        available_at: astrologer.available_at
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
