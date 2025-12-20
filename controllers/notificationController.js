@@ -234,18 +234,41 @@ exports.sendNotification = async (req, res) => {
 
 
 // GET /api/notifications?userId=&userType=
+const mongoose = require("mongoose");
+const Notification = require("../models/Notification");
+
 exports.getUserNotifications = async (req, res) => {
   try {
-    const { userId, userType } = req.query;
+    const { userId, notificationId } = req.query;
 
-    if (!userId || !userType) {
-      return res.status(400).json({ message: "userId & userType required" });
+    // ❌ No params
+    if (!userId && !notificationId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId or notificationId is required"
+      });
     }
 
-    const notifications = await Notification.find({
-      userId,
-      userType
-    }).sort({ createdAt: -1 });
+    let query = {};
+
+    // 🔹 Single notification
+    if (notificationId) {
+      if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+        return res.status(400).json({ success: false, message: "Invalid notificationId" });
+      }
+      query._id = notificationId;
+    }
+
+    // 🔹 All notifications for user
+    if (userId) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, message: "Invalid userId" });
+      }
+      query.userId = userId;
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -257,6 +280,7 @@ exports.getUserNotifications = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 
