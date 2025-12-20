@@ -234,8 +234,7 @@ exports.sendNotification = async (req, res) => {
 
 
 // GET /api/notifications?userId=&userType=
-const mongoose = require("mongoose");
-const Notification = require("../models/Notification");
+
 
 exports.getUserNotifications = async (req, res) => {
   try {
