@@ -317,6 +317,39 @@ exports.getWallet = async (req, res) => {
         date: call.createdAt
       });
     }
+   
+
+    // -----------------------------
+// DUMMY TRANSACTIONS (UI ONLY)
+// -----------------------------
+if (transactions.length === 0) {
+  transactions.push(
+    {
+      sessionId: "dummy-1",
+      callType: "voice",
+      durationMinutes: "5.00",
+      amount: "50.00",
+      date: new Date(),
+      isDummy: true
+    },
+    {
+      sessionId: "dummy-2",
+      callType: "video",
+      durationMinutes: "10.00",
+      amount: "100.00",
+      date: new Date(Date.now() - 86400000), // yesterday
+      isDummy: true
+    },
+    {
+      sessionId: "dummy-3",
+      callType: "chat",
+      durationMinutes: "8.00",
+      amount: "80.00",
+      date: new Date(Date.now() - 172800000), // 2 days ago
+      isDummy: true
+    }
+  );
+}
 
     // -----------------------------
     // RESPONSE
