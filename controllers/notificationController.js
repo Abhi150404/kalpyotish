@@ -349,15 +349,21 @@ exports.getUnreadCount = async (req, res) => {
       isRead: false
     });
 
-    res.json({
+    return res.json({
       success: true,
-      unreadCount: count
+      data: {
+        count
+      }
     });
 
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
+
 
 
 
