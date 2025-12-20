@@ -284,19 +284,37 @@ exports.getUserNotifications = async (req, res) => {
 
 
 // PATCH /api/notifications/read/:id
+
+
+// PATCH /api/notification/read/:id
 exports.markAsRead = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid notification id"
+      });
+    }
+
     const notification = await Notification.findByIdAndUpdate(
-      req.params.id,
+      id,
       { isRead: true },
       { new: true }
     );
 
     if (!notification) {
-      return res.status(404).json({ message: "Notification not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found"
+      });
     }
 
-    res.json({ success: true, data: notification });
+    res.json({
+      success: true,
+      data: notification
+    });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -305,17 +323,42 @@ exports.markAsRead = async (req, res) => {
 
 
 // GET /api/notifications/unread-count?userId=&userType=
+
+
+// GET /api/notification/unread-count?userId=
 exports.getUnreadCount = async (req, res) => {
-  const { userId, userType } = req.query;
+  try {
+    const { userId } = req.query;
 
-  const count = await Notification.countDocuments({
-    userId,
-    userType,
-    isRead: false
-  });
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required"
+      });
+    }
 
-  res.json({ success: true, unreadCount: count });
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid userId"
+      });
+    }
+
+    const count = await Notification.countDocuments({
+      userId,
+      isRead: false
+    });
+
+    res.json({
+      success: true,
+      unreadCount: count
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
+
 
 
 
