@@ -258,10 +258,15 @@ exports.getWallet = async (req, res) => {
       });
     }
 
-    // Base query: Earnings only for this Astrologer
-    let query = { receiverId: astroId, status: "ended" };
+    // -----------------------------
+    // BASE QUERY
+    // -----------------------------
+    let query = {
+      receiverId: astroId,
+      status: "ended"
+    };
 
-    // Apply type filter
+    // Type filter
     if (type) {
       if (!["chat", "voice", "video", "live"].includes(type)) {
         return res.status(400).json({
@@ -275,42 +280,58 @@ exports.getWallet = async (req, res) => {
     // Date filter
     if (filter) {
       const { start, end } = getDateRange(filter);
-      if (start) {
+      if (start && end) {
         query.createdAt = { $gte: start, $lte: end };
       }
     }
 
-    const logs = await CallLog.find(query);
+    const logs = await CallLog.find(query).sort({ createdAt: -1 });
 
     // -----------------------------
-    //  WALLET CALCULATION
+    // WALLET CALCULATION
     // -----------------------------
     let totalMinutes = 0;
     let walletBalance = 0;
 
-    logs.forEach(call => {
+    const transactions = [];
+
+    for (const call of logs) {
       const mins = call.duration / 60000; // ms → minutes
-      const earning = mins * 10; // ₹10 per minute
+      const earning = mins * 10; // ₹10/min
 
       totalMinutes += mins;
       walletBalance += earning;
 
-      // Auto-update totalEarning in DB if not saved
+      // Save earning if missing
       if (!call.totalEarning || call.totalEarning === 0) {
         call.totalEarning = earning;
-        call.save();
+        await call.save();
       }
-    });
 
+      // Transaction history
+      transactions.push({
+        sessionId: call._id,
+        callType: call.callType,
+        durationMinutes: mins.toFixed(2),
+        amount: earning.toFixed(2),
+        date: call.createdAt
+      });
+    }
+
+    // -----------------------------
+    // RESPONSE
+    // -----------------------------
     return res.json({
       success: true,
-      message: "Wallet fetched successfully",
-      filter: filter || "all",
-      type: type || "all",
-      totalSessions: logs.length,
-      totalMinutes: totalMinutes.toFixed(2),
-      walletBalance: walletBalance.toFixed(2),
-      currency: "INR"
+      data: {
+        filter: filter || "all",
+        type: type || "all",
+        totalSessions: logs.length,
+        totalMinutes: totalMinutes.toFixed(2),
+        walletBalance: walletBalance.toFixed(2),
+        currency: "INR",
+        transactions
+      }
     });
 
   } catch (error) {
@@ -321,6 +342,7 @@ exports.getWallet = async (req, res) => {
     });
   }
 };
+
 
 
 
