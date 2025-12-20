@@ -3,6 +3,7 @@ const FollowAstrologer = require("../models/FollowAstrologer");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
+
 // Helper to generate 4-digit random number
 
 
@@ -318,42 +319,43 @@ exports.verifyOtpAndResetPassword = async (req, res) => {
 
 
 // PATCH /api/astrologer/update-availability/:id
+const mongoose = require("mongoose");
+
 exports.updateAstrologerAvailability = async (req, res) => {
   try {
-    const astrologerId = req.params.id;
+    const { id } = req.params;
     const { chat, call, videoCall } = req.body;
 
-    if (!astrologerId) {
+    // ✅ Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: "Astrologer ID is required"
+        message: "Invalid astrologer ID"
       });
     }
 
-    // Build update object dynamically
-    const availabilityUpdate = {};
+    const update = {};
+    if (typeof chat === "boolean") update["available_at.chat"] = chat;
+    if (typeof call === "boolean") update["available_at.call"] = call;
+    if (typeof videoCall === "boolean") update["available_at.videoCall"] = videoCall;
 
-    if (typeof chat === "boolean") availabilityUpdate["available_at.chat"] = chat;
-    if (typeof call === "boolean") availabilityUpdate["available_at.call"] = call;
-    if (typeof videoCall === "boolean") availabilityUpdate["available_at.videoCall"] = videoCall;
-
-    if (Object.keys(availabilityUpdate).length === 0) {
+    if (!Object.keys(update).length) {
       return res.status(400).json({
         success: false,
-        message: "At least one availability field is required"
+        message: "No availability fields provided"
       });
     }
 
     const astrologer = await Astrologer.findByIdAndUpdate(
-      astrologerId,
-      { $set: availabilityUpdate },
+      id,
+      { $set: update },
       { new: true }
     );
 
     if (!astrologer) {
       return res.status(404).json({
         success: false,
-        message: "Astrologer not found"
+        message: "Astrologer not found in database"
       });
     }
 
@@ -361,13 +363,14 @@ exports.updateAstrologerAvailability = async (req, res) => {
       success: true,
       message: "Availability updated successfully",
       data: {
-        astrologerId: astrologer._id,
+        _id: astrologer._id,
         available_at: astrologer.available_at
       }
     });
 
   } catch (err) {
-    res.status(500).json({
+    console.error("Availability update error:", err);
+    return res.status(500).json({
       success: false,
       message: err.message
     });
