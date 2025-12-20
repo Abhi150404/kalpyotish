@@ -203,13 +203,24 @@ exports.sendNotification = async (req, res) => {
     // --------------------------------------------------
     // 5️⃣ FINAL RESPONSE
     // --------------------------------------------------
-    return res.json({
-      success: true,
-      message: "Notification saved & processed",
-      notificationId: savedNotification._id,   // ✅ RETURN _id
-      notification: savedNotification,         // optional (useful)
-      fcmResponse                              // may be null
-    });
+  return res.json({
+  success: true,
+  message: "Notification saved & processed",
+  data: {
+    _id: savedNotification._id,
+    userId: savedNotification.userId,
+    userType: savedNotification.userType,
+    title: savedNotification.title,
+    body: savedNotification.body,
+    type: savedNotification.type,
+    fcmToken: savedNotification.fcmToken || null,
+    isRead: savedNotification.isRead,
+    createdAt: savedNotification.createdAt,
+    updatedAt: savedNotification.updatedAt
+  },
+  fcmResponse
+});
+
 
   } catch (err) {
     console.error("sendNotification Error:", err);
