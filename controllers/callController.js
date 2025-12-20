@@ -176,7 +176,6 @@ exports.getEarnings = async (req, res) => {
     const { astroId } = req.params;
     const { filter, type } = req.query;
 
-    // Validate astrologer
     if (!astroId) {
       return res.status(400).json({
         success: false,
@@ -184,10 +183,8 @@ exports.getEarnings = async (req, res) => {
       });
     }
 
-    // Only receiverId (Astro)
     let query = { receiverId: astroId, status: "ended" };
 
-    // 🎯 Apply call type filter (voice/video/chat/live)
     if (type) {
       if (!["chat", "voice", "video", "live"].includes(type)) {
         return res.status(400).json({
@@ -198,42 +195,77 @@ exports.getEarnings = async (req, res) => {
       query.callType = type;
     }
 
-    // 🎯 Apply date range filter
     if (filter) {
       const { start, end } = getDateRange(filter);
       if (start) query.createdAt = { $gte: start, $lte: end };
     }
 
-    // 🔍 Fetch Logs
     const calls = await CallLog.find(query);
 
-    // 🎯 Calculate earnings
     let totalEarning = 0;
     let totalMinutes = 0;
 
-    calls.forEach(call => {
-      const mins = call.duration / 60000; // convert ms → minutes
-      totalMinutes += mins;
+    const transactions = [];
 
+    calls.forEach(call => {
+      const mins = call.duration / 60000;
       const earning = mins * call.ratePerMinute;
+
+      totalMinutes += mins;
       totalEarning += earning;
 
-      // Auto-update DB if totalEarning missing
       if (!call.totalEarning || call.totalEarning === 0) {
         call.totalEarning = earning;
         call.save();
       }
+
+      transactions.push({
+        sessionId: call._id,
+        callType: call.callType,
+        durationMinutes: mins.toFixed(2),
+        ratePerMinute: call.ratePerMinute,
+        amount: earning.toFixed(2),
+        date: call.createdAt
+      });
     });
+
+    // -----------------------------
+    // 🧪 DUMMY DATA (UI SUPPORT)
+    // -----------------------------
+    if (transactions.length === 0) {
+      transactions.push(
+        {
+          sessionId: "dummy-1",
+          callType: "voice",
+          durationMinutes: "5.00",
+          ratePerMinute: 10,
+          amount: "50.00",
+          date: new Date(),
+          isDummy: true
+        },
+        {
+          sessionId: "dummy-2",
+          callType: "video",
+          durationMinutes: "12.00",
+          ratePerMinute: 10,
+          amount: "120.00",
+          date: new Date(Date.now() - 86400000),
+          isDummy: true
+        }
+      );
+    }
 
     return res.json({
       success: true,
-      filter: filter || "all",
-      type: type || "all",
-      totalCalls: calls.length,
-      totalMinutes: totalMinutes.toFixed(2),
-      totalEarning: totalEarning.toFixed(2),
-      currency: "INR",
-      data: calls
+      data: {
+        filter: filter || "all",
+        type: type || "all",
+        totalCalls: calls.length,
+        totalMinutes: totalMinutes.toFixed(2),
+        totalEarning: totalEarning.toFixed(2),
+        currency: "INR",
+        transactions
+      }
     });
 
   } catch (error) {
@@ -244,6 +276,7 @@ exports.getEarnings = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getWallet = async (req, res) => {
