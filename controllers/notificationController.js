@@ -121,18 +121,31 @@ const mongoose = require("mongoose");
 
 exports.sendNotification = async (req, res) => {
   try {
-    const { name, profilePic, id, type, channelName, fcmToken } = req.body;
+    const { name, profilePic, id, type, channelName, fcmToken, userType } = req.body;
 
+    // 1️⃣ Basic validation
     if (!name || !id || !type || !channelName) {
-      return res.status(400).json({ success: false, message: "Missing fields" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
     }
+
+    const receiverType = userType || "UserDetail"; // default
 
     let tokens = [];
 
+    // --------------------------------------------------
+    // 2️⃣ TOKEN COLLECTION
+    // --------------------------------------------------
+
     // Voice / Video → single user
-    if (["voice", "video"].includes(type)) {
+    if (type === "voice" || type === "video") {
       if (!fcmToken) {
-        return res.status(400).json({ success: false, message: "FCM token required" });
+        return res.status(400).json({
+          success: false,
+          message: "FCM token required for voice/video"
+        });
       }
       tokens.push(fcmToken);
     }
@@ -142,48 +155,71 @@ exports.sendNotification = async (req, res) => {
       const astro = await Astro.findById(id).select("followers");
       if (astro?.followers?.length) {
         const tokenDocs = await NotificationToken.find({
-          userId: { $in: astro.followers }
+          userId: { $in: astro.followers },
+          fcmToken: { $exists: true, $ne: null }
         }).select("fcmToken");
 
         tokens = tokenDocs.map(t => t.fcmToken);
       }
     }
 
-    // 🟢 SAVE DB NOTIFICATION (ALWAYS)
-    await Notification.create({
+    // --------------------------------------------------
+    // 3️⃣ SAVE NOTIFICATION (ALWAYS)
+    // --------------------------------------------------
+    const savedNotification = await Notification.create({
       userId: id,
-      userType: "UserDetail",
+      userType: receiverType,
       title: `${name} started a ${type}`,
       body: `Channel: ${channelName}`,
-      type
+      isRead: false
     });
 
-    // 🔔 SEND PUSH (OPTIONAL SUCCESS)
+    // --------------------------------------------------
+    // 4️⃣ SEND PUSH (OPTIONAL)
+    // --------------------------------------------------
     let fcmResponse = null;
-    if (tokens.length) {
-      fcmResponse = await admin.messaging().sendEachForMulticast({
-        tokens,
-        data: {
-          name,
-          profilePic,
-          id,
-          type,
-          channelName
-        }
-      });
+
+    if (tokens.length > 0) {
+      try {
+        fcmResponse = await admin.messaging().sendEachForMulticast({
+          tokens,
+          data: {
+            name: String(name),
+            profilePic: String(profilePic || ""),
+            id: String(id),
+            type: String(type),
+            channelName: String(channelName),
+            notificationId: String(savedNotification._id) // 🔥 VERY IMPORTANT
+          },
+          android: { priority: "high" },
+          apns: { payload: { aps: { "content-available": 1 } } }
+        });
+      } catch (fcmErr) {
+        console.error("FCM Error:", fcmErr.message);
+        // ❗ Do NOT fail API if push fails
+      }
     }
 
+    // --------------------------------------------------
+    // 5️⃣ FINAL RESPONSE
+    // --------------------------------------------------
     return res.json({
       success: true,
       message: "Notification saved & processed",
-      fcmResponse
+      notificationId: savedNotification._id,   // ✅ RETURN _id
+      notification: savedNotification,         // optional (useful)
+      fcmResponse                              // may be null
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("sendNotification Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
+
 
 
 // GET /api/notifications?userId=&userType=
