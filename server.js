@@ -63,7 +63,7 @@ app.use('/api/money',moneyAddRoutes);
 app.use("/api/astro-form", astroRoutes);
 app.use("/api/astrologers-new", astrologerRoutes_2);
 app.use("/api/astro",astroroutes);
-app.use("/api", transitRoute);
+app.use("/api/transits", transitRoute);
 
 
 const orderRoutes = require('./routes/orderRoutes');
