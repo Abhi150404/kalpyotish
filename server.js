@@ -25,6 +25,10 @@ const moneyAddRoutes = require('./routes/moneyAddRoutes.js');
 const astroRoutes = require("./routes/astroFormRoutes");
 const astrologerRoutes_2 = require("./routes/astrologerRoutes_2");
 const astroroutes = require("./routes/astroRoutes");
+const transitRoutes = require("./routes/transit.routes");
+
+app.use("/api", transitRoutes);
+
 
 
 
