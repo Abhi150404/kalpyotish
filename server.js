@@ -27,7 +27,7 @@ const astrologerRoutes_2 = require("./routes/astrologerRoutes_2");
 const astroroutes = require("./routes/astroRoutes");
 const transitRoute = require("./routes/transit.routes");
 
-app.use("/api", transitRoute);
+
 
 
 
@@ -63,6 +63,7 @@ app.use('/api/money',moneyAddRoutes);
 app.use("/api/astro-form", astroRoutes);
 app.use("/api/astrologers-new", astrologerRoutes_2);
 app.use("/api/astro",astroroutes);
+app.use("/api", transitRoute);
 
 
 const orderRoutes = require('./routes/orderRoutes');
