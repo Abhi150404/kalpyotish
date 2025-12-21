@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const RatingReview = require("../models/RatingReview");
 const Astro = require("../models/astroModel");
 
@@ -7,6 +8,10 @@ const Astro = require("../models/astroModel");
 exports.addOrUpdateReview = async (req, res) => {
   try {
     const { userId, astrologerId, rating, review } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(astrologerId)) {
+      return res.status(400).json({ success: false, message: "Invalid astrologerId" });
+    }
 
     const existingReview = await RatingReview.findOne({
       user: userId,
@@ -26,9 +31,13 @@ exports.addOrUpdateReview = async (req, res) => {
       });
     }
 
-    // 🔁 Recalculate astrologer average rating
+    // 🔁 Recalculate astrologer rating
     const stats = await RatingReview.aggregate([
-      { $match: { astrologer: require("mongoose").Types.ObjectId(astrologerId) } },
+      {
+        $match: {
+          astrologer: new mongoose.Types.ObjectId(astrologerId)
+        }
+      },
       {
         $group: {
           _id: "$astrologer",
@@ -75,7 +84,7 @@ exports.getAstrologerReviews = async (req, res) => {
 };
 
 /**
- * 🗑 Delete Review (optional)
+ * 🗑 Delete Review
  */
 exports.deleteReview = async (req, res) => {
   try {
