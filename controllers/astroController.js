@@ -76,15 +76,16 @@ exports.createAstrologer = async (req, res) => {
 
 
 // GET ALL
+const { getRatingSummaryForAstros } = require("../utils/ratingHelper");
+
 exports.getAllAstrologers = async (req, res) => {
   try {
     const userId = req.query.userId || null;
 
-    // 1️⃣ Get all astrologers
     const astrologers = await Astrologer.find().lean();
-    const astroIds = astrologers.map(a => a._id);
+    const astroIds = astrologers.map(a => a._id.toString());
 
-    // 2️⃣ Get followers
+    // followers (unchanged)
     const followMap = await FollowAstrologer.find({
       astrologerId: { $in: astroIds },
       isFollowed: true
@@ -100,35 +101,16 @@ exports.getAllAstrologers = async (req, res) => {
       followerGrouped[f.astrologerId].push(f.userId);
     });
 
-    // 3️⃣ Get all reviews for these astrologers
-    const reviews = await RatingReview.find({
-      astrologer: { $in: astroIds }
-    })
-      .populate("user", "name profile")
-      .lean();
+    // ⭐ rating summary
+    const ratingMap = await getRatingSummaryForAstros(astroIds);
 
-    // 4️⃣ Group reviews by astrologerId
-    const reviewGrouped = {};
-    reviews.forEach(r => {
-      if (!reviewGrouped[r.astrologer]) {
-        reviewGrouped[r.astrologer] = [];
-      }
-      reviewGrouped[r.astrologer].push(r);
-    });
-
-    // 5️⃣ Attach everything
     const finalAstros = astrologers.map(a => {
       const followers = followerGrouped[a._id] || [];
-      const astroReviews = reviewGrouped[a._id] || [];
-
-      const totalReviews = astroReviews.length;
-      const averageRating =
-        totalReviews > 0
-          ? (
-              astroReviews.reduce((sum, r) => sum + r.rating, 0) /
-              totalReviews
-            ).toFixed(1)
-          : 0;
+      const rating = ratingMap[a._id.toString()] || {
+        averageRating: 0,
+        totalReviews: 0,
+        stars: { 1:0, 2:0, 3:0, 4:0, 5:0 }
+      };
 
       return {
         ...a,
@@ -137,66 +119,64 @@ exports.getAllAstrologers = async (req, res) => {
         isFollowed: userId
           ? followers.some(f => String(f._id) === String(userId))
           : false,
-
-        // ⭐ Rating data
-        averageRating: Number(averageRating),
-        totalReviews,
-        reviews: astroReviews
+        ratingSummary: rating
       };
     });
 
-    res.status(200).json({
-      success: true,
-      data: finalAstros
-    });
+    res.status(200).json({ success: true, data: finalAstros });
 
   } catch (err) {
-    console.log("Error in getAllAstrologers:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    console.error("getAllAstrologers:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 
 
+
 // GET SINGLE
+
 exports.getAstrologer = async (req, res) => {
   try {
     const astrologerId = req.params.id;
-    const userId = req.query.userId || null; // optional for isFollowed
+    const userId = req.query.userId || null;
 
     const astro = await Astrologer.findById(astrologerId).lean();
     if (!astro)
       return res.status(404).json({ success: false, message: "Not found" });
 
-    // Fetch followers
     const followersData = await FollowAstrologer.find({
       astrologerId,
       isFollowed: true
     })
-      .populate("userId", "name profile email") // followers info
+      .populate("userId", "name profile email")
       .lean();
 
     const followers = followersData.map(f => f.userId);
 
-    const result = {
-      ...astro,
-      followers,
-      followersCount: followers.length,
-      isFollowed: userId
-        ? followers.some(f => String(f._id) === String(userId))
-        : false
+    // ⭐ rating summary
+    const ratingMap = await getRatingSummaryForAstros([astrologerId]);
+    const ratingSummary = ratingMap[astrologerId] || {
+      averageRating: 0,
+      totalReviews: 0,
+      stars: { 1:0, 2:0, 3:0, 4:0, 5:0 }
     };
 
     res.status(200).json({
       success: true,
-      data: result
+      data: {
+        ...astro,
+        followers,
+        followersCount: followers.length,
+        isFollowed: userId
+          ? followers.some(f => String(f._id) === String(userId))
+          : false,
+        ratingSummary
+      }
     });
 
   } catch (err) {
-    console.log("Error in getAstrologer:", err);
+    console.error("getAstrologer:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
