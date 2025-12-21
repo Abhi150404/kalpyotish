@@ -1,5 +1,6 @@
 const Astrologer = require("../models/astroModel");
 const FollowAstrologer = require("../models/FollowAstrologer");
+const RatingReview = require("../models/RatingReview");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
@@ -77,30 +78,57 @@ exports.createAstrologer = async (req, res) => {
 // GET ALL
 exports.getAllAstrologers = async (req, res) => {
   try {
-    const userId = req.query.userId || null; // for isFollowed flag
+    const userId = req.query.userId || null;
 
+    // 1️⃣ Get all astrologers
     const astrologers = await Astrologer.find().lean();
-
     const astroIds = astrologers.map(a => a._id);
 
-    // Fetch all follow records for these astrologers
+    // 2️⃣ Get followers
     const followMap = await FollowAstrologer.find({
       astrologerId: { $in: astroIds },
       isFollowed: true
     })
-      .populate("userId", "name profile email") // populate follower details
+      .populate("userId", "name profile email")
       .lean();
 
-    // Group followers by astrologerId
-    const grouped = {};
+    const followerGrouped = {};
     followMap.forEach(f => {
-      if (!grouped[f.astrologerId]) grouped[f.astrologerId] = [];
-      grouped[f.astrologerId].push(f.userId);
+      if (!followerGrouped[f.astrologerId]) {
+        followerGrouped[f.astrologerId] = [];
+      }
+      followerGrouped[f.astrologerId].push(f.userId);
     });
 
-    // Attach followers + count + isFollowed
+    // 3️⃣ Get all reviews for these astrologers
+    const reviews = await RatingReview.find({
+      astrologer: { $in: astroIds }
+    })
+      .populate("user", "name profile")
+      .lean();
+
+    // 4️⃣ Group reviews by astrologerId
+    const reviewGrouped = {};
+    reviews.forEach(r => {
+      if (!reviewGrouped[r.astrologer]) {
+        reviewGrouped[r.astrologer] = [];
+      }
+      reviewGrouped[r.astrologer].push(r);
+    });
+
+    // 5️⃣ Attach everything
     const finalAstros = astrologers.map(a => {
-      const followers = grouped[a._id] || [];
+      const followers = followerGrouped[a._id] || [];
+      const astroReviews = reviewGrouped[a._id] || [];
+
+      const totalReviews = astroReviews.length;
+      const averageRating =
+        totalReviews > 0
+          ? (
+              astroReviews.reduce((sum, r) => sum + r.rating, 0) /
+              totalReviews
+            ).toFixed(1)
+          : 0;
 
       return {
         ...a,
@@ -108,7 +136,12 @@ exports.getAllAstrologers = async (req, res) => {
         followersCount: followers.length,
         isFollowed: userId
           ? followers.some(f => String(f._id) === String(userId))
-          : false
+          : false,
+
+        // ⭐ Rating data
+        averageRating: Number(averageRating),
+        totalReviews,
+        reviews: astroReviews
       };
     });
 
@@ -119,7 +152,10 @@ exports.getAllAstrologers = async (req, res) => {
 
   } catch (err) {
     console.log("Error in getAllAstrologers:", err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
