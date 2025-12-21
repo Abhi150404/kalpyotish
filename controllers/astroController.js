@@ -76,7 +76,7 @@ exports.createAstrologer = async (req, res) => {
 
 
 // GET ALL
-const { getRatingSummaryForAstros } = require("../utils/ratingHelper");
+const { getRatingSummaryForAstros } = require("../utilis/ratingHelper");
 
 exports.getAllAstrologers = async (req, res) => {
   try {
