@@ -16,18 +16,23 @@ const astroSchema = new mongoose.Schema(
     skills: String,
     salary: Number,
     perMinuteRate: Number,
+
     available_at: {
       chat: { type: Boolean, default: false },
       voice: { type: Boolean, default: false },
       video: { type: Boolean, default: false },
     },
+
     number: String,
     email: String,
     experience: String,
     profilePhoto: String, // Cloudinary URL
+
+    // ⭐ Rating summary fields
+    averageRating: { type: Number, default: 0 },
+    totalReviews: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model("Astro", astroSchema);
-
